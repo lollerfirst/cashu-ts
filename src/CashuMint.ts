@@ -131,7 +131,7 @@ class CashuMint {
 	 * @returns the mint will create and return a new mint quote containing a payment request for the specified amount and unit
 	 */
 	async createMintQuote(mintQuotePayload: MintQuotePayload): Promise<MintQuoteResponse> {
-		return CashuMint.createMintQuote(this._mintUrl, mintQuotePayload, this._customRequest);
+		return await CashuMint.createMintQuote(this._mintUrl, mintQuotePayload, this._customRequest);
 	}
 
 	/**
@@ -161,7 +161,7 @@ class CashuMint {
 	 * @returns the mint will create and return a Lightning invoice for the specified amount
 	 */
 	async checkMintQuote(quote: string): Promise<MintQuoteResponse> {
-		return CashuMint.checkMintQuote(this._mintUrl, quote, this._customRequest);
+		return await CashuMint.checkMintQuote(this._mintUrl, quote, this._customRequest);
 	}
 
 	/**
@@ -234,7 +234,7 @@ class CashuMint {
 	 * @returns
 	 */
 	async createMeltQuote(meltQuotePayload: MeltQuotePayload): Promise<MeltQuoteResponse> {
-		return CashuMint.createMeltQuote(this._mintUrl, meltQuotePayload, this._customRequest);
+		return await CashuMint.createMeltQuote(this._mintUrl, meltQuotePayload, this._customRequest);
 	}
 
 	/**
@@ -275,7 +275,7 @@ class CashuMint {
 	 * @returns
 	 */
 	async checkMeltQuote(quote: string): Promise<MeltQuoteResponse> {
-		return CashuMint.checkMeltQuote(this._mintUrl, quote, this._customRequest);
+		return await CashuMint.checkMeltQuote(this._mintUrl, quote, this._customRequest);
 	}
 
 	/**
@@ -315,7 +315,7 @@ class CashuMint {
 	 * @returns
 	 */
 	async melt(meltPayload: MeltPayload): Promise<MeltQuoteResponse> {
-		return CashuMint.melt(this._mintUrl, meltPayload, this._customRequest);
+		return await CashuMint.melt(this._mintUrl, meltPayload, this._customRequest);
 	}
 	/**
 	 * Checks if specific proofs have already been redeemed
@@ -403,7 +403,7 @@ class CashuMint {
 	 * @returns all the mints past and current keysets.
 	 */
 	async getKeySets(): Promise<MintAllKeysets> {
-		return CashuMint.getKeySets(this._mintUrl, this._customRequest);
+		return await CashuMint.getKeySets(this._mintUrl, this._customRequest);
 	}
 
 	/**
@@ -437,7 +437,7 @@ class CashuMint {
 	async restore(restorePayload: {
 		outputs: Array<SerializedBlindedMessage>;
 	}): Promise<PostRestoreResponse> {
-		return CashuMint.restore(this._mintUrl, restorePayload, this._customRequest);
+		return await CashuMint.restore(this._mintUrl, restorePayload, this._customRequest);
 	}
 }
 

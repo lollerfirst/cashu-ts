@@ -1,15 +1,15 @@
 {
-	"name": "@cashu/cashu-ts",
+	"name": "@lollerfirst/cashu-ts",
 	"version": "1.0.1",
 	"description": "cashu library for communicating with a cashu mint",
 	"main": "dist/lib/es5/index.js",
 	"module": "dist/lib/es6/index.js",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/cashubtc/cashu-ts"
+		"url": "git+https://github.com/lollerfirst/cashu-ts"
 	},
 	"bugs": {
-		"url": "https://github.com/cashubtc/cashu-ts/issues"
+		"url": "https://github.com/lollerfirst/cashu-ts/issues"
 	},
 	"scripts": {
 		"compile": "rm -rf dist/lib && tsc && tsc --build tsconfig.es5.json",
@@ -44,7 +44,7 @@
 		"ts-jest-resolver": "^2.0.1",
 		"ts-node": "^10.9.1",
 		"typedoc": "^0.24.7",
-		"typescript": "^5.0.4"
+		"typescript": "^5.6.2"
 	},
 	"dependencies": {
 		"@cashu/crypto": "^0.2.6",

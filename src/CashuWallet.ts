@@ -505,7 +505,7 @@ class CashuWallet {
 		const proofs = decodedToken.token
 			.filter((x) => x.mint === this.mint.mintUrl)
 			.flatMap((t) => t.proofs);
-		return this.payLnInvoice(invoice, proofs, meltQuote, {
+		return await this.payLnInvoice(invoice, proofs, meltQuote, {
 			keysetId: options?.keysetId,
 			counter: options?.counter
 		});
