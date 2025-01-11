@@ -57,7 +57,7 @@ export class MintInfo {
 		return { supported: false };
 	}
 	private checkNut15() {
-		if (this._mintInfo.nuts[15] && this._mintInfo.nuts[15].methods.length > 0) {
+		if (this._mintInfo.nuts[15] /*&& this._mintInfo.nuts[15].methods.length > 0*/) {
 			return { supported: true, params: this._mintInfo.nuts[15].methods };
 		}
 		return { supported: false };
