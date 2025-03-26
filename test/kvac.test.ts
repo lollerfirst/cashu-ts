@@ -1,10 +1,7 @@
 import { test, describe, expect, it } from 'vitest';
 import {AmountAttribute, BootstrapProof, BulletProof, CashuTranscript, GroupElement, Scalar, ScriptAttribute} from 'cashu_kvac';
 import { hexToBytes } from '@noble/hashes/utils';
-import { transcode } from 'buffer';
-import { transpileDeclaration } from 'typescript';
 import { customReplacer } from '../src/request';
-import { Script } from 'vm';
 
 describe('test kvac wasm library', () => {
     it('should print the result of calling typeof on KVAC types', () => {
