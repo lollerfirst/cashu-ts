@@ -1,10 +1,23 @@
-import { beforeAll, beforeEach, afterAll, afterEach, test, describe, expect, vi } from 'vitest';
-import {AmountAttribute, BootstrapProof, BulletProof, CashuTranscript, Scalar, ScriptAttribute} from 'cashu_kvac';
+import { test, describe, expect, it } from 'vitest';
+import {AmountAttribute, BootstrapProof, BulletProof, CashuTranscript, GroupElement, Scalar, ScriptAttribute} from 'cashu_kvac';
 import { hexToBytes } from '@noble/hashes/utils';
 import { transcode } from 'buffer';
 import { transpileDeclaration } from 'typescript';
+import { customReplacer } from '../src/request';
+import { Script } from 'vm';
 
 describe('test kvac wasm library', () => {
+    it('should print the result of calling typeof on KVAC types', () => {
+        const scalar = Scalar.wasmCreateRandom();
+        const ge = GroupElement.wasmFromHex("03709e80c88487a2411e1ee4dfb9f22a861492d20c4765150c0c794abd70f8147c");
+
+        expect(scalar instanceof GroupElement).toBe(false);
+        expect(ge instanceof Scalar).toBe(false);
+
+        expect(scalar instanceof Scalar).toBe(true);
+        expect(ge instanceof GroupElement).toBe(true);
+    });
+
     test('test create scalar', () => {
         const scalar = Scalar.wasmCreateRandom();
         const scalar_json = scalar.wasmSerializeToHex();
@@ -17,25 +30,39 @@ describe('test kvac wasm library', () => {
         console.log(scalar3.wasmSerializeToHex())
     })
 
+    test('test create GroupElement', () => {
+        const ge = GroupElement.wasmFromHex("03709e80c88487a2411e1ee4dfb9f22a861492d20c4765150c0c794abd70f8147c")
+        const ge_json = ge.wasmSerializeToHex();
+        const ge2 = GroupElement.wasmFromHex(ge_json);
+        console.log(ge_json);
+
+        const ge_bytes = ge.wasmSerialize();
+        const ge3 = GroupElement.wasmFromBytesBE(ge_bytes);
+
+        console.log(ge3.wasmSerializeToHex())
+    });
+
     test('test create attributes', () => {
 
         const amountAttribute = AmountAttribute.wasmCreateNew(BigInt(0));
-        const amountAttributeObj = JSON.parse(amountAttribute.toJson());
+        const amountAttributeObj = amountAttribute.toJsValue();
         expect(amountAttributeObj).toHaveProperty("a");
         expect(amountAttributeObj).toHaveProperty("r");
         expect(amountAttributeObj["a"]).toBe(0);
 
-        const parsedAmountAttribute = AmountAttribute.fromJson(amountAttribute.toJson())
+        const _ = AmountAttribute.fromJson(amountAttribute.toJson());
+        const __ = AmountAttribute.fromJsValue(amountAttributeObj);
 
-        const script_bytes = hexToBytes("000000")
+        const script_bytes = hexToBytes("000000");
         const scriptAttribute = ScriptAttribute.wasmCreateNew(script_bytes);
-        const scriptAttributeObj = JSON.parse(scriptAttribute.toJson())
+        const scriptAttributeObj = scriptAttribute.toJsValue()
         expect(scriptAttributeObj).toHaveProperty("s");
         expect(scriptAttributeObj).toHaveProperty("r");
         expect(scriptAttributeObj["s"]).toBe("709e80c88487a2411e1ee4dfb9f22a861492d20c4765150c0c794abd70f8147c")        
 
-        const parsedScriptAttribute = ScriptAttribute.fromJson(scriptAttribute.toJson());
-    })
+        const ___ = ScriptAttribute.fromJson(scriptAttribute.toJson());
+        const ____ = ScriptAttribute.fromJsValue(scriptAttributeObj);
+    });
 
     test('wrong json parsing attributes', () => {
         const wrongAttribute = {
@@ -46,7 +73,7 @@ describe('test kvac wasm library', () => {
         
         expect(() => AmountAttribute.fromJson(wrongAttributeJson)).toThrowError();
         expect(() => ScriptAttribute.fromJson(wrongAttributeJson)).toThrowError();
-    })
+    });
 
     test('test create bootstrap proof for amount 0', () => {
         const amountAttribute = AmountAttribute.wasmCreateNew(BigInt(0));
@@ -55,7 +82,7 @@ describe('test kvac wasm library', () => {
 
         let verifyTranscript = CashuTranscript.wasmCreateNew();
         expect(BootstrapProof.wasmVerify(amountAttribute.wasmCommitment(), proof, verifyTranscript)).toBe(true);
-    })
+    });
 
     test('test create wrong bootstrap proof for amount 1', () => {
         const amountAttribute = AmountAttribute.wasmCreateNew(BigInt(1));
@@ -64,7 +91,7 @@ describe('test kvac wasm library', () => {
 
         let verifyTranscript = CashuTranscript.wasmCreateNew();
         expect(BootstrapProof.wasmVerify(amountAttribute.wasmCommitment(), proof, verifyTranscript)).toBe(false);
-    })
+    });
 
     test('test create bulletproof for amount 45', () => {
         const proveTranscript = CashuTranscript.wasmCreateNew();
@@ -76,7 +103,7 @@ describe('test kvac wasm library', () => {
         const bulletproof = BulletProof.wasmCreate([amountAttribute], proveTranscript);
         
         expect(bulletproof.wasmVerify([amountCommitment], verifyTranscript)).toBe(true);
-    })
+    });
 
     test('test create wrong bulletproof for amount 2^32', () => {
         const proveTranscript = CashuTranscript.wasmCreateNew();
@@ -89,5 +116,20 @@ describe('test kvac wasm library', () => {
         const bulletproof = BulletProof.wasmCreate([amountAttribute], proveTranscript);
         
         expect(bulletproof.wasmVerify([amountCommitment], verifyTranscript)).toBe(false);
-    })
+    });
+
+    test('test custom JSON serialization for KVAC types instances', () => {
+        const blindingFactor = hexToBytes("a6c983cdf82518f585fbd307b08f2491869f35c29b6036630ce4224e38335a1b");
+        const amountAttribute = AmountAttribute.wasmCreateNew(BigInt(1), blindingFactor);
+
+        const scriptBytes = hexToBytes("000000");
+        const scriptAttribute = ScriptAttribute.wasmCreateNew(scriptBytes, blindingFactor);
+
+        const amountAttributeJson = JSON.stringify(amountAttribute, customReplacer);
+        expect(amountAttributeJson).toEqual('{"a":1,"r":"a6c983cdf82518f585fbd307b08f2491869f35c29b6036630ce4224e38335a1b"}');
+
+        const scriptAttributeJson = JSON.stringify(scriptAttribute, customReplacer);
+        expect(scriptAttributeJson).toEqual('{"s":"709e80c88487a2411e1ee4dfb9f22a861492d20c4765150c0c794abd70f8147c","r":"a6c983cdf82518f585fbd307b08f2491869f35c29b6036630ce4224e38335a1b"}');
+
+    });
 });
