@@ -1,11 +1,12 @@
 import { KvacIssuedMac } from ".";
+import { ApiError } from "../responses";
 
 export type KvacResponse = {
     /**
      * Contains MACs and proofs of issuance
      */
     issued_macs: Array<KvacIssuedMac>;
-};
+} & ApiError;
 
 /// Bootstrap Response
 export type KvacBootstrapResponse = KvacResponse;

@@ -34,12 +34,12 @@ import { handleMintInfoContactFieldDeprecated } from './legacy/nut-06.js';
  * Class represents Cashu Mint API. This class contains Lower level functions that are implemented by CashuWallet.
  */
 class CashuMint {
-	private ws?: WSConnection;
+	protected ws?: WSConnection;
 	/**
 	 * @param _mintUrl requires mint URL to create this object
 	 * @param _customRequest if passed, use custom request implementation for network communication with the mint
 	 */
-	constructor(private _mintUrl: string, private _customRequest?: typeof request) {
+	constructor(protected _mintUrl: string, protected _customRequest?: typeof request) {
 		this._mintUrl = sanitizeUrl(_mintUrl);
 		this._customRequest = _customRequest;
 	}

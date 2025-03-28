@@ -1,4 +1,3 @@
-import { AmountAttribute, BulletProof, Coin, GroupElement, MAC, RandomizedCoin, Scalar, ScriptAttribute, ZKP } from 'cashu_kvac';
 import { HttpResponseError, NetworkError, MintOperationError } from './model/Errors';
 
 type RequestArgs = {
@@ -19,30 +18,13 @@ export function setGlobalRequestOptions(options: Partial<RequestOptions>): void 
 	globalRequestOptions = options;
 }
 
-export function customReplacer(key: unknown, value: unknown) {
-	if (value instanceof Scalar ||
-		value instanceof GroupElement ||
-		value instanceof AmountAttribute ||
-		value instanceof ScriptAttribute ||
-		value instanceof ZKP ||
-		value instanceof BulletProof ||
-		value instanceof MAC ||
-		value instanceof Coin ||
-		value instanceof RandomizedCoin
-	) {
-		return value.toJsValue();
-	}
-
-	return value;
-}
-
 async function _request({
 	endpoint,
 	requestBody,
 	headers: requestHeaders,
 	...options
 }: RequestOptions): Promise<unknown> {
-	const body = requestBody ? JSON.stringify(requestBody, customReplacer) : undefined;
+	const body = requestBody ? JSON.stringify(requestBody) : undefined;
 	const headers = {
 		...{ Accept: 'application/json, text/plain, */*' },
 		...(body ? { 'Content-Type': 'application/json' } : undefined),
