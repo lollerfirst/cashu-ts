@@ -1,6 +1,7 @@
+import { Scalar } from "cashu_kvac";
 import { CashuMint } from "./CashuMint";
-import { KvacMeltResponse, KvacMintResponse, KvacSwapResponse } from "./model/types/mint/kvac/responses";
-import { KvacMeltPayload, KvacMintPayload, KvacSwapPayload } from "./model/types/wallet/kvac/payloads";
+import { KvacCheckStateResponse, KvacMeltResponse, KvacMintResponse, KvacRestoreResponse, KvacSwapResponse } from "./model/types/mint/kvac/responses";
+import { KvacCheckStatePayload, KvacMeltPayload, KvacMintPayload, KvacRestorePayload, KvacSwapPayload } from "./model/types/wallet/kvac/payloads";
 import request from "./request";
 import { isObj, joinUrls } from "./utils";
 
@@ -94,7 +95,9 @@ export class ExtendedCashuMint extends CashuMint {
             });
     
             if (
-                !isObj(data) || !Array.isArray(data?.issued_macs)
+                !isObj(data) ||
+                typeof data?.state !== 'string' ||
+                !Array.isArray(data?.issued_macs)
             ) {
                 throw new Error('bad response');
             }
@@ -110,4 +113,56 @@ export class ExtendedCashuMint extends CashuMint {
         async kvacMelt(meltPayload: KvacMeltPayload): Promise<KvacMeltResponse> {
             return ExtendedCashuMint.kvacMelt(this._mintUrl, meltPayload, this._customRequest);
         }
+
+        public static async kvacRestore(
+            mintUrl: string,
+            restorePayload: KvacRestorePayload,
+            customRequest?: typeof request
+        ): Promise<KvacRestoreResponse> {
+            const requestInstance = customRequest || request;
+            const data = await requestInstance<KvacRestoreResponse>({
+                endpoint: joinUrls(mintUrl, '/v2/kvac/restore'),
+                method: 'POST',
+                requestBody: restorePayload
+            });
+    
+            if (!isObj(data) || !Array.isArray(data?.issued_macs)) {
+                throw new Error('bad response');
+            }
+    
+            return data;
+        }
+    
+        async kvacRestore(restorePayload: {
+            tags: Array<Scalar>;
+        }): Promise<KvacRestoreResponse> {
+            return ExtendedCashuMint.kvacRestore(this._mintUrl, restorePayload, this._customRequest);
+        }
+
+        /**
+         * Checks if specific proofs have already been redeemed
+         * @param mintUrl
+         * @param checkPayload
+         * @param customRequest
+         * @returns redeemed and unredeemed ordered list of booleans
+         */
+        public static async kvacCheck(
+            mintUrl: string,
+            checkPayload: KvacCheckStatePayload,
+            customRequest?: typeof request
+        ): Promise<KvacCheckStateResponse> {
+            const requestInstance = customRequest || request;
+            const data = await requestInstance<KvacCheckStateResponse>({
+                endpoint: joinUrls(mintUrl, '/v2/kvac/checkstate'),
+                method: 'POST',
+                requestBody: checkPayload
+            });
+    
+            if (!isObj(data) || !Array.isArray(data?.states)) {
+                throw new Error('bad response');
+            }
+    
+            return data;
+        }
+        
 }

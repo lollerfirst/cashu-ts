@@ -1,5 +1,5 @@
-import { KvacIssuedMac } from ".";
-import { ApiError } from "../responses";
+import { KvacCoinState, KvacIssuedMac } from ".";
+import { ApiError, MeltQuoteState } from "../responses";
 
 export type KvacResponse = {
     /**
@@ -29,4 +29,22 @@ export type KvacMeltResponse = KvacResponse & {
      * (optional) Pre-image of the peg-out payment
      */
     preimage?: string;
+
+    /**
+     * State of the payment
+     */
+    state: MeltQuoteState,
 };
+
+/// Restore Response
+export type KvacRestoreResponse = KvacResponse;
+
+/**
+ * Response when checking proofs if they are spendable. Should not rely on this for receiving, since it can be easily cheated.
+ */
+export type KvacCheckStateResponse = {
+    /**
+     * States of the coins
+     */
+    states: Array<KvacCoinState>;
+} & ApiError;

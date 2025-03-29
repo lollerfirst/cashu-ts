@@ -1,4 +1,4 @@
-import { BulletProof, ZKP } from "cashu_kvac";
+import { BulletProof, GroupElement, Scalar, ZKP } from "cashu_kvac";
 import { KvacCoinMessage, KvacRandomizedCoin } from ".";
 
 export type KvacBootstrapPayload = {
@@ -74,4 +74,18 @@ export type KvacMeltPayload = KvacSwapPayload & {
      * Quote ID received from the mint.
      */
     quote: string;
+};
+
+export type KvacRestorePayload = {
+    /**
+     * Deterministic tags associated with commitments for which a MAC was issued 
+     */
+    tags: Array<Scalar>;
+};
+
+export type KvacCheckStatePayload = {
+    /**
+     * Nullifiers identifying the coins
+     */
+    nullifiers: Array<GroupElement>;
 };

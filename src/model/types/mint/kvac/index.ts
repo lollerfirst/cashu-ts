@@ -1,4 +1,5 @@
 import { GroupElement, MAC, ZKP } from "cashu_kvac";
+import { CheckStateEnum } from "../responses";
 
 /**
  * Payload that needs to be sent to the mint when checking for spendable proofs
@@ -31,4 +32,15 @@ export type KvacIssuedMac = {
      * Zero-Knowledge proof that MAC was generated with the keys of keyset_id
      */
     issuance_proof: ZKP;
+};
+
+export type KvacCoinState = {
+    /**
+     * Nullifiers of the queried coins
+     */
+    nullifier: GroupElement,
+    /**
+     * state
+     */
+    state: CheckStateEnum,
 };
