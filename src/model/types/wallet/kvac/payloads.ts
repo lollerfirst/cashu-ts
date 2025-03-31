@@ -1,5 +1,5 @@
 import { BulletProof, GroupElement, Scalar, ZKP } from "cashu_kvac";
-import { KvacCoinMessage, KvacRandomizedCoin } from ".";
+import { KvacCoinOutput, KvacCoinInput } from ".";
 
 export type KvacBootstrapPayload = {
     /**
@@ -7,7 +7,7 @@ export type KvacBootstrapPayload = {
      *
      * [`Array<KvacCoinMessage>`] Where each element is a coin encoding 0 as an amount.
      */
-    outputs: Array<KvacCoinMessage>;
+    outputs: Array<KvacCoinOutput>;
 
     /**
      * Bootstrap Proofs
@@ -24,14 +24,14 @@ export type KvacSwapPayload = {
      * [`Array<KvacRandomizedCoin>`] Where each element is the randomized version of a [`KvacCoin`] for
      * which a [`MAC`] was issued. In other words, the outputs of a previous request but randomized.
      */
-    inputs: Array<KvacRandomizedCoin>;
+    inputs: Array<KvacCoinInput>;
 
     /**
      * Outputs
      *
      * [`Array<KvacCoinMessage>`] Where elements are new coins awaiting their [`MAC`]
      */
-    outputs: Array<KvacCoinMessage>;
+    outputs: Array<KvacCoinOutput>;
 
     /**
      * Balance Proofs

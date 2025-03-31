@@ -1,6 +1,6 @@
 import { AmountAttribute, Coin, GroupElement, RandomizedCoin, Scalar, ScriptAttribute, ZKP } from "cashu_kvac";
 
-export type KvacCoinMessage = {
+export type KvacCoinOutput = {
     /**
      * Keyset ID
      *
@@ -26,18 +26,18 @@ export type KvacCoinMessage = {
     c: [GroupElement, GroupElement];
 };
 
-export type KvacPreCoin = {
+export type KvacPreIssuanceCoin = {
     /**
      * Keyset ID
      *
-     * ID from which we expect a signature.
+     * [`ID`] from which we expect a signature.
      */
-    keyset_id: string;
+    id: string;
 
     /**
      * Amount
      *
-     * Amount encoded in [`AmountAttribute`]
+     * Amount encoded in AmountAttribute
      * (for easier retrieval)
      */
     amount: number;
@@ -45,7 +45,7 @@ export type KvacPreCoin = {
     /**
      * Script
      *
-     * Script encoded in [`ScriptAttribute`]
+     * Script encoded in ScriptAttribute
      */
     script?: string; // Optional property
 
@@ -57,23 +57,10 @@ export type KvacPreCoin = {
     unit: string;
 
     /**
-     * Tag
-     *
-     * Unique identifier used to create the algebraic MAC from
-     * and for recovery purposes.
-     */
-    t_tag: Scalar;
-
-    /**
-     * Pair of attributes
-     *
-     * Pair ([`AmountAttribute`], [`ScriptAttribute`]) that represent:
-     * 1) Value: holds the [`Scalar`] of the amount and its blinding factor
-     * 2) Script: holds the [`Scalar`] of the scripthash and its blinding factor
+     * Attributes
      */
     attributes: [AmountAttribute, ScriptAttribute];
-    
-};
+}
 
 export type KvacCoin = {
     /**
@@ -81,7 +68,7 @@ export type KvacCoin = {
      *
      * [`ID`] from which we expect a signature.
      */
-    keyset_id: string;
+    id: string;
 
     /**
      * Amount
@@ -120,7 +107,7 @@ export type KvacCoin = {
     issuance_proof: ZKP;
 }
 
-export type KvacRandomizedCoin = {
+export type KvacCoinInput = {
     /**
      * Keyset ID
      *

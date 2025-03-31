@@ -3,10 +3,14 @@ import { CashuWallet } from "./CashuWallet";
 import { ExtendedCashuMint } from "./ExtendedCashuMint";
 import { MintKvacKeys, MintKvacKeyset } from "./model/types/mint/kvac/keys";
 import { OutputDataFactory } from "./model/OutputData";
+import { KvacCoin, KvacCoinOutput, KvacPreIssuanceCoin } from "./model/types/wallet/kvac";
+import { AmountAttribute, BootstrapProof, IParamsProof, CashuTranscript, Scalar, ScriptAttribute, ZKP, Coin, MAC, MintPublicKey } from "cashu_kvac";
+import { KvacBootstrapPayload } from "./model/types/wallet/kvac/payloads";
 
 export class ExtendedCashuWallet extends CashuWallet {
     private _kvacKeys: Map<string, MintKvacKeys> = new Map();
     private _kvacKeysets: Array<MintKvacKeyset> = [];
+    private _kvacKeysetId: string | undefined;
 
     mint: ExtendedCashuMint;
 
@@ -41,4 +45,245 @@ export class ExtendedCashuWallet extends CashuWallet {
         // Overwrite mint field
         this.mint = mint;
     }
+
+    get kvacKeys(): Map<string, MintKvacKeys> {
+        return this._kvacKeys;
+    }
+    get kvacKeysetId(): string {
+        if (!this._kvacKeysetId) {
+            throw new Error('No keysetId set');
+        }
+        return this._kvacKeysetId;
+    }
+    set kvacKeysetId(keysetId: string) {
+        this._kvacKeysetId = keysetId;
+    }
+    get kvacKeysets(): Array<MintKvacKeyset> {
+        return this._kvacKeysets;
+    }
+
+    /**
+	 * Load mint information, keysets and keys. This function can be called if no keysets are passed in the constructor
+	 */
+	async loadMint() {
+		await super.loadMint();
+		await this.getKvacKeySets();
+		await this.getKvacKeys();
+	}
+
+    /**
+     * Choose a keyset to activate based on the lowest input fee
+     *
+     * Note: this function will filter out deprecated base64 keysets
+     *
+     * @param keysets keysets to choose from
+     * @returns active keyset
+     */
+    getActiveKvacKeyset(keysets: Array<MintKvacKeyset>): MintKvacKeyset {
+        let activeKeysets = keysets.filter((k: MintKeyset) => k.active);
+
+        // we only consider keyset IDs that start with "00"
+        activeKeysets = activeKeysets.filter((k: MintKvacKeyset) => k.id.startsWith('00'));
+
+        const activeKeyset = activeKeysets.sort(
+            (a: MintKvacKeyset, b: MintKvacKeyset) => (a.input_fee_ppk ?? 0) - (b.input_fee_ppk ?? 0)
+        )[0];
+        if (!activeKeyset) {
+            throw new Error('No active keyset found');
+        }
+        return activeKeyset;
+    }
+
+    /**
+     * Get keysets from the mint with the unit of the wallet
+     * @returns keysets with wallet's unit
+     */
+    async getKvacKeySets(): Promise<Array<MintKvacKeyset>> {
+        const allKeysets = await this.mint.getKvacKeySets();
+        const unitKeysets = allKeysets.kvac_keysets.filter((k: MintKvacKeyset) => k.unit === this._unit);
+        this._kvacKeysets = unitKeysets;
+        return this._kvacKeysets;
+    }
+
+    /**
+     * Get all active keys from the mint and set the keyset with the lowest fees as the active wallet keyset.
+     * @returns keyset
+     */
+    async getAllKvacKeys(): Promise<Array<MintKvacKeys>> {
+        const keysets = await this.mint.getKvacKeys();
+        this._kvacKeys = new Map(keysets.kvac_keysets.map((k: MintKvacKeys) => [k.id, k]));
+        this._kvacKeysetId = this.getActiveKvacKeyset(this._kvacKeysets).id;
+        return keysets.kvac_keysets;
+    }
+
+    /**
+     * Get public keys from the mint. If keys were already fetched, it will return those.
+     *
+     * If `keysetId` is set, it will fetch and return that specific keyset.
+     * Otherwise, we select an active keyset with the unit of the wallet.
+     *
+     * @param keysetId optional keysetId to get keys for
+     * @param forceRefresh? if set to true, it will force refresh the keyset from the mint
+     * @returns keyset
+     */
+    async getKvacKeys(keysetId?: string, forceRefresh?: boolean): Promise<MintKvacKeys> {
+        if (!(this._kvacKeysets.length > 0) || forceRefresh) {
+            await this.getKvacKeySets();
+        }
+        // no keyset id is chosen, let's choose one
+        if (!keysetId) {
+            const localKeyset = this.getActiveKvacKeyset(this._kvacKeysets);
+            keysetId = localKeyset.id;
+        }
+        // make sure we have keyset for this id
+        if (!this._kvacKeysets.find((k: MintKvacKeyset) => k.id === keysetId)) {
+            await this.getKvacKeySets();
+            if (!this._kvacKeysets.find((k: MintKvacKeyset) => k.id === keysetId)) {
+                throw new Error(`could not initialize keys. No keyset with id '${keysetId}' found`);
+            }
+        }
+
+        // make sure we have keys for this id
+        if (!this._kvacKeys.get(keysetId)) {
+            const keys = await this.mint.getKvacKeys(keysetId);
+            this._kvacKeys.set(keysetId, keys.kvac_keysets[0]);
+        }
+
+        // set and return
+        this._kvacKeysetId = keysetId;
+        return this._kvacKeys.get(keysetId) as MintKvacKeys;
+    }
+
+    /**
+     * calculates the fees based on inputs (proofs)
+     * @param proofs input proofs to calculate fees for
+     * @returns fee amount
+     */
+    getFeesForKvacCoins(proofs: Array<KvacCoin>): number {
+        if (!this._kvacKeysets.length) {
+            throw new Error('Could not calculate fees. No keysets found');
+        }
+        const keysetIds = new Set(proofs.map((p: KvacCoin) => p.id));
+        keysetIds.forEach((id: string) => {
+            if (!this._kvacKeysets.find((k: MintKeyset) => k.id === id)) {
+                throw new Error(`Could not calculate fees. No keyset found with id: ${id}`);
+            }
+        });
+
+        const fees = Math.floor(
+            Math.max(
+                (proofs.reduce(
+                    (total: number, curr: KvacCoin) =>
+                        total + (this._kvacKeysets.find((k: MintKeyset) => k.id === curr.id)?.input_fee_ppk || 0),
+                    0
+                ) +
+                    999) /
+                    1000,
+                0
+            )
+        );
+        return fees;
+    }
+
+    /**
+     * calculates the fees based on inputs for a given keyset
+     * @param nInputs number of inputs
+     * @param keysetId keysetId used to lookup `input_fee_ppk`
+     * @returns fee amount
+     */
+    getFeesForKvacKeyset(nInputs: number, keysetId: string): number {
+        const fees = Math.floor(
+            Math.max(
+                (nInputs * (this._kvacKeysets.find((k: MintKvacKeyset) => k.id === keysetId)?.input_fee_ppk || 0) +
+                    999) /
+                    1000,
+                0
+            )
+        );
+        return fees;
+    }
+
+    /**
+     * Fetches bootstrap coins (coins with no value to use as inputs)
+     * @param size number of bootstrap coins to fetch
+     * @returns kvac coins
+     */
+    async bootstrap(size?: number): Promise<Array<KvacCoin>> {
+        const keys = await this.getKvacKeys();
+        const n = size ?? 10;
+
+        // Create 0 value outputs and ZKPs
+        const preIssuanceCoins: Array<KvacPreIssuanceCoin> = [];
+        const outputs: Array<KvacCoinOutput> = [];
+        const proofs: Array<ZKP> = [];
+        const provingTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
+
+        for (let i=0; i<n; ++i) {
+            const tag: Scalar = Scalar.wasmCreateRandom();
+            const amountAttr: AmountAttribute = AmountAttribute.wasmCreateNew(BigInt(0));
+            const scriptAttr: ScriptAttribute = ScriptAttribute.wasmCreateNew(new Uint8Array());
+
+            // Request output
+            const output = {
+                id: keys.id,
+                t: tag,
+                c: [amountAttr.wasmCommitment(), scriptAttr.wasmCommitment()],
+            } as KvacCoinOutput;
+
+            // Pre-issuance information about this coin
+            const preIssueCoin = {
+                id: keys.id,
+                amount: 0,
+                script: "",
+                unit: this._unit,
+                attributes: [amountAttr, scriptAttr],
+            } as KvacPreIssuanceCoin;
+
+            const proof = BootstrapProof.wasmCreate(amountAttr, provingTranscript);
+            outputs.push(output);
+            preIssuanceCoins.push(preIssueCoin);
+            proofs.push(proof);
+        }
+
+        // Create payload
+        const payload = {
+            outputs: outputs,
+            proofs: proofs,
+        } as KvacBootstrapPayload;
+
+        const response = await this.mint.kvacBoostrap(payload);
+        console.log(JSON.stringify(response, null, 2));
+
+        if (response.issued_macs.length < n) {
+            throw new Error("Mint returned less outputs than inputs")
+        }
+
+        // Verify issuance and create coins
+        const verifyTranscript = CashuTranscript.wasmCreateNew();
+        const coins: Array<KvacCoin> = [];
+        for (let i = 0; i<n; ++i) {
+            const proofObj = response.issued_macs[i].issuance_proof;
+            const proof = ZKP.fromJSON(proofObj);
+            const mac = MAC.fromJSON(response.issued_macs[i].mac);
+            const preIssueCoin = preIssuanceCoins[i];
+            const coin = Coin.wasmCreateNew(preIssueCoin.attributes[0], preIssueCoin.attributes[1], mac);
+            const mintPubkey = MintPublicKey.fromJSON(keys.kvac_keys);
+            
+            if (!IParamsProof.wasmVerify(mintPubkey, coin, proof, verifyTranscript)) {
+                throw new Error(`Couldn't verify issuance for bootstrap coin ${i}`);
+            }
+            
+            coins.push({
+                id: keys.id,
+                amount: 0,
+                script: "",
+                unit: this._unit,
+                coin: coin.toJSON(),
+                issuance_proof: proofObj,
+            } as KvacCoin)
+        }
+
+        return coins;        
+    }
+
 }

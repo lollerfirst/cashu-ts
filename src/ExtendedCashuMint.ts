@@ -1,7 +1,7 @@
 import { Scalar } from "cashu_kvac";
 import { CashuMint } from "./CashuMint";
-import { KvacCheckStateResponse, KvacMeltResponse, KvacMintResponse, KvacRestoreResponse, KvacSwapResponse } from "./model/types/mint/kvac/responses";
-import { KvacCheckStatePayload, KvacMeltPayload, KvacMintPayload, KvacRestorePayload, KvacSwapPayload } from "./model/types/wallet/kvac/payloads";
+import { KvacBootstrapResponse, KvacCheckStateResponse, KvacMeltResponse, KvacMintResponse, KvacRestoreResponse, KvacSwapResponse } from "./model/types/mint/kvac/responses";
+import { KvacBootstrapPayload, KvacCheckStatePayload, KvacMeltPayload, KvacMintPayload, KvacRestorePayload, KvacSwapPayload } from "./model/types/wallet/kvac/payloads";
 import request from "./request";
 import { isObj, joinUrls } from "./utils";
 import { MintActiveKvacKeys, MintAllKvacKeysets } from "./model/types/mint/kvac/keys";
@@ -223,7 +223,7 @@ export class ExtendedCashuMint extends CashuMint {
             customRequest?: typeof request
         ): Promise<MintAllKvacKeysets> {
             const requestInstance = customRequest || request;
-            return requestInstance<MintAllKvacKeysets>({ endpoint: joinUrls(mintUrl, '/v1/keysets') });
+            return requestInstance<MintAllKvacKeysets>({ endpoint: joinUrls(mintUrl, '/v2/kvac/keysets') });
         }
     
         /**
@@ -232,6 +232,29 @@ export class ExtendedCashuMint extends CashuMint {
          */
         async getKvacKeySets(): Promise<MintAllKvacKeysets> {
             return ExtendedCashuMint.getKvacKeySets(this._mintUrl, this._customRequest);
+        }
+
+        public static async kvacBootstrap(
+            mintUrl: string,
+            payload: KvacBootstrapPayload,
+            customRequest?: typeof request
+        ): Promise<KvacBootstrapResponse> {
+            const requestInstance = customRequest || request;
+            const data = await requestInstance<KvacRestoreResponse>({
+                endpoint: joinUrls(mintUrl, '/v2/kvac/bootstrap'),
+                method: 'POST',
+                requestBody: payload,
+            });
+
+            if (!isObj(data) || !Array.isArray(data.issued_macs)) {
+                throw new Error('bad response');
+            }
+
+            return data;
+        }
+
+        async kvacBoostrap(bootstrapPayload: KvacBootstrapPayload): Promise<KvacBootstrapResponse>{
+            return ExtendedCashuMint.kvacBootstrap(this._mintUrl, bootstrapPayload, this._customRequest);
         }
         
 }

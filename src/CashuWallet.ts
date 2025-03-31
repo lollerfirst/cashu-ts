@@ -83,7 +83,7 @@ class CashuWallet {
 	private _keysetId: string | undefined;
 	private _keysets: Array<MintKeyset> = [];
 	private _seed: Uint8Array | undefined = undefined;
-	private _unit = DEFAULT_UNIT;
+	protected _unit = DEFAULT_UNIT;
 	private _mintInfo: MintInfo | undefined = undefined;
 	private _denominationTarget = DEFAULT_DENOMINATION_TARGET;
 	private _keepFactory: OutputDataFactory | undefined;
