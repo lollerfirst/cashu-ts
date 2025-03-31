@@ -252,7 +252,6 @@ export class ExtendedCashuWallet extends CashuWallet {
         } as KvacBootstrapPayload;
 
         const response = await this.mint.kvacBoostrap(payload);
-        console.log(JSON.stringify(response, null, 2));
 
         if (response.issued_macs.length < n) {
             throw new Error("Mint returned less outputs than inputs")
@@ -268,7 +267,7 @@ export class ExtendedCashuWallet extends CashuWallet {
             const preIssueCoin = preIssuanceCoins[i];
             const coin = Coin.wasmCreateNew(preIssueCoin.attributes[0], preIssueCoin.attributes[1], mac);
             const mintPubkey = MintPublicKey.fromJSON(keys.kvac_keys);
-            
+
             if (!IParamsProof.wasmVerify(mintPubkey, coin, proof, verifyTranscript)) {
                 throw new Error(`Couldn't verify issuance for bootstrap coin ${i}`);
             }
