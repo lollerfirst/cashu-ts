@@ -251,7 +251,7 @@ export class ExtendedCashuWallet extends CashuWallet {
             proofs: proofs,
         } as KvacBootstrapPayload;
 
-        const response = await this.mint.kvacBoostrap(payload);
+        const response = await this.mint.kvacBootstrap(payload);
 
         if (response.issued_macs.length < n) {
             throw new Error("Mint returned less outputs than inputs")

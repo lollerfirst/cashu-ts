@@ -253,7 +253,7 @@ export class ExtendedCashuMint extends CashuMint {
             return data;
         }
 
-        async kvacBoostrap(bootstrapPayload: KvacBootstrapPayload): Promise<KvacBootstrapResponse>{
+        async kvacBootstrap(bootstrapPayload: KvacBootstrapPayload): Promise<KvacBootstrapResponse>{
             return ExtendedCashuMint.kvacBootstrap(this._mintUrl, bootstrapPayload, this._customRequest);
         }
         
