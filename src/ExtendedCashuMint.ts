@@ -4,6 +4,7 @@ import { KvacCheckStateResponse, KvacMeltResponse, KvacMintResponse, KvacRestore
 import { KvacCheckStatePayload, KvacMeltPayload, KvacMintPayload, KvacRestorePayload, KvacSwapPayload } from "./model/types/wallet/kvac/payloads";
 import request from "./request";
 import { isObj, joinUrls } from "./utils";
+import { MintActiveKvacKeys, MintAllKvacKeysets } from "./model/types/mint/kvac/keys";
 
 export class ExtendedCashuMint extends CashuMint {
         /**
@@ -163,6 +164,74 @@ export class ExtendedCashuMint extends CashuMint {
             }
     
             return data;
+        }
+
+        async kvacCheck(checkPayload: KvacCheckStatePayload): Promise<KvacCheckStateResponse> {
+            return ExtendedCashuMint.kvacCheck(this._mintUrl, checkPayload, this._customRequest);
+        }
+
+        /**
+         * Get the mints public keys
+         * @param mintUrl
+         * @param keysetId optional param to get the keys for a specific keyset. If not specified, the keys from all active keysets are fetched
+         * @param customRequest
+         * @returns
+         */
+        public static async getKvacKeys(
+            mintUrl: string,
+            keysetId?: string,
+            customRequest?: typeof request
+        ): Promise<MintActiveKvacKeys> {
+            // backwards compatibility for base64 encoded keyset ids
+            if (keysetId) {
+                // make the keysetId url safe
+                keysetId = keysetId.replace(/\//g, '_').replace(/\+/g, '-');
+            }
+            const requestInstance = customRequest || request;
+            const data = await requestInstance<MintActiveKvacKeys>({
+                endpoint: keysetId ? joinUrls(mintUrl, '/v2/kvac/keys', keysetId) : joinUrls(mintUrl, '/v2/kvac/keys')
+            });
+    
+            if (!isObj(data) || !Array.isArray(data.kvac_keysets)) {
+                throw new Error('bad response');
+            }
+    
+            return data;
+        }
+        /**
+         * Get the mints public keys
+         * @param keysetId optional param to get the keys for a specific keyset. If not specified, the keys from all active keysets are fetched
+         * @returns the mints public keys
+         */
+        async getKvacKeys(keysetId?: string, mintUrl?: string): Promise<MintActiveKvacKeys> {
+            const allKeys = await ExtendedCashuMint.getKvacKeys(
+                mintUrl || this._mintUrl,
+                keysetId,
+                this._customRequest
+            );
+            return allKeys;
+        }
+
+        /**
+         * Get the mints keysets in no specific order
+         * @param mintUrl
+         * @param customRequest
+         * @returns all the mints past and current keysets.
+         */
+        public static async getKvacKeySets(
+            mintUrl: string,
+            customRequest?: typeof request
+        ): Promise<MintAllKvacKeysets> {
+            const requestInstance = customRequest || request;
+            return requestInstance<MintAllKvacKeysets>({ endpoint: joinUrls(mintUrl, '/v1/keysets') });
+        }
+    
+        /**
+         * Get the mints keysets in no specific order
+         * @returns all the mints past and current keysets.
+         */
+        async getKvacKeySets(): Promise<MintAllKvacKeysets> {
+            return ExtendedCashuMint.getKvacKeySets(this._mintUrl, this._customRequest);
         }
         
 }
