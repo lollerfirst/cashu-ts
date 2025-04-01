@@ -18,13 +18,10 @@ import {
 	ScriptAttribute,
 	ZKP,
 	Coin,
-	MAC,
-	MintPublicKey,
 	RandomizedCoin,
 	BalanceProof,
 	MacProof,
 	BulletProof,
-	GroupElement
 } from 'cashu_kvac';
 import {
 	KvacBootstrapPayload,
