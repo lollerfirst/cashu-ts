@@ -268,8 +268,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 			// Create payload output
 			const output = {
 				id: keyset.id,
-				t: tag.toJSON(),
-				c: [amountAttr.wasmCommitment().toJSON(), scriptAttr.wasmCommitment().toJSON()]
+				t: tag,
+				c: [AmountAttribute.wasmCommitment(amountAttr), ScriptAttribute.wasmCommitment(scriptAttr)]
 			} as KvacCoinOutput;
 
 			// Pre-issuance information about this coin
@@ -278,12 +278,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 				amount: amount,
 				script: scriptHex,
 				unit: this._unit,
-				attributes: [amountAttr.toJSON(), scriptAttr.toJSON()]
+				attributes: [amountAttr, scriptAttr]
 			} as KvacPreIssuanceCoin;
-
-			tag.free();
-			amountAttr.free();
-			scriptAttr.free();
 
 			preIssuanceCoins.push(preIssueCoin);
 			outputs.push(output);
@@ -313,8 +309,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 			// Create payload output
 			const output = {
 				id: keyset.id,
-				t: tag.toJSON(),
-				c: [amountAttr.wasmCommitment().toJSON(), scriptAttr.wasmCommitment().toJSON()]
+				t: tag,
+				c: [AmountAttribute.wasmCommitment(amountAttr), ScriptAttribute.wasmCommitment(scriptAttr)]
 			} as KvacCoinOutput;
 
 			// Pre-issuance information about this coin
@@ -323,7 +319,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				amount: amount,
 				script: scriptHex,
 				unit: this._unit,
-				attributes: [amountAttr.toJSON(), scriptAttr.toJSON()]
+				attributes: [amountAttr, scriptAttr]
 			} as KvacPreIssuanceCoin;
 
 			tag.free();
@@ -364,7 +360,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				const output = {
 					id: keys.id,
 					t: tag,
-					c: [amountAttr.wasmCommitment(), scriptAttr.wasmCommitment()]
+					c: [AmountAttribute.wasmCommitment(amountAttr), ScriptAttribute.wasmCommitment(scriptAttr)]
 				} as KvacCoinOutput;
 
 				// Pre-issuance information about this coin
@@ -400,16 +396,15 @@ export class ExtendedCashuWallet extends CashuWallet {
 			const coins: Array<KvacCoin> = [];
 			for (let i = 0; i < n; ++i) {
 				// Create WASM objects from javascript generic objects
-				const proofObj = response.issued_macs[i].issuance_proof;
-				const proof = ZKP.fromJSON(proofObj);
-				const mac = MAC.fromJSON(response.issued_macs[i].mac);
+				const proof = response.issued_macs[i].issuance_proof;
+				const mac = response.issued_macs[i].mac;
 				const preIssueCoin = preIssuanceCoins[i];
 				const coin = Coin.wasmCreateNew(
-					AmountAttribute.fromJSON(preIssueCoin.attributes[0]),
-					ScriptAttribute.fromJSON(preIssueCoin.attributes[1]),
+					preIssueCoin.attributes[0],
+					preIssueCoin.attributes[1],
 					mac
 				);
-				const mintPubkey = MintPublicKey.fromJSON(keys.kvac_keys);
+				const mintPubkey = keys.kvac_keys;
 
 				// Compose the coin
 				coins.push({
@@ -417,8 +412,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 					amount: 0,
 					script: '',
 					unit: this._unit,
-					coin: coin.toJSON(),
-					issuance_proof: proofObj
+					coin: coin,
+					issuance_proof: proof
 				} as KvacCoin);
 
 				// Verify issuance
@@ -466,40 +461,38 @@ export class ExtendedCashuWallet extends CashuWallet {
 					  )
 					: this.createKvacRandomOutputs([0, amount + previousBalanceCoin.amount], keys);
 
-			console.log(`preIssuanceCoins: ${JSON.stringify(preIssuanceCoins, null, 2)}`);
-
 			// Create Balance Proof
 			const balanceProof: ZKP = BalanceProof.wasmCreate(
 				[
-					AmountAttribute.fromJSON(previousBalanceCoin.coin.amount),
-					AmountAttribute.fromJSON(zeroAmountCoin.coin.amount)
+					previousBalanceCoin.coin.amount,
+					zeroAmountCoin.coin.amount
 				], // inputs
 				[
-					AmountAttribute.fromJSON(preIssuanceCoins[0].attributes[0]),
-					AmountAttribute.fromJSON(preIssuanceCoins[1].attributes[0])
+					preIssuanceCoins[0].attributes[0],
+					preIssuanceCoins[1].attributes[0]
 				], // outputs
 				proveTranscript
 			);
 
 			// Create MAC Proofs
 			const zeroAmountMacProof: ZKP = MacProof.wasmCreate(
-				MintPublicKey.fromJSON(keys.kvac_keys),
-				Coin.fromJSON(zeroAmountCoin.coin),
-				RandomizedCoin.wasmFromCoin(Coin.fromJSON(zeroAmountCoin.coin), true),
+				keys.kvac_keys,
+				zeroAmountCoin.coin,
+				RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true),
 				proveTranscript
 			);
 			const previousBalanceMacProof: ZKP = MacProof.wasmCreate(
-				MintPublicKey.fromJSON(keys.kvac_keys),
-				Coin.fromJSON(previousBalanceCoin.coin),
-				RandomizedCoin.wasmFromCoin(Coin.fromJSON(previousBalanceCoin.coin), true),
+				keys.kvac_keys,
+				previousBalanceCoin.coin,
+				RandomizedCoin.wasmFromCoin(previousBalanceCoin.coin, true),
 				proveTranscript
 			);
 
 			// Create BulletProof
 			const rangeProof: BulletProof = BulletProof.wasmCreate(
 				[
-					AmountAttribute.fromJSON(preIssuanceCoins[0].attributes[0]),
-					AmountAttribute.fromJSON(preIssuanceCoins[1].attributes[0])
+					preIssuanceCoins[0].attributes[0],
+					preIssuanceCoins[1].attributes[0]
 				],
 				proveTranscript
 			);
@@ -510,14 +503,14 @@ export class ExtendedCashuWallet extends CashuWallet {
 					keyset_id: keys.id,
 					script: '',
 					unit: this._unit,
-					randomized_coin: RandomizedCoin.wasmFromCoin(Coin.fromJSON(zeroAmountCoin.coin), true)
+					randomized_coin: RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true)
 				} as KvacCoinInput,
 				{
 					keyset_id: keys.id,
 					script: '',
 					unit: this._unit,
 					randomized_coin: RandomizedCoin.wasmFromCoin(
-						Coin.fromJSON(previousBalanceCoin.coin),
+						previousBalanceCoin.coin,
 						true
 					)
 				} as KvacCoinInput
@@ -533,6 +526,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 				range_proof: { BULLETPROOF: rangeProof } as RangeZKP
 			} as KvacMintPayload;
 
+            console.log(`payload: ${JSON.stringify(payload, null, 2)}`);
+
 			const response: KvacMintResponse = await this.mint.kvacMint(payload);
 
 			if (response.issued_macs.length != payload.outputs.length) {
@@ -542,16 +537,15 @@ export class ExtendedCashuWallet extends CashuWallet {
 			const coins: Array<KvacCoin> = [];
 			for (let i = 0; i < payload.outputs.length; ++i) {
 				// Create WASM objects from javascript generic objects
-				const proofObj = response.issued_macs[i].issuance_proof;
-				const proof = ZKP.fromJSON(proofObj);
-				const mac = MAC.fromJSON(response.issued_macs[i].mac);
+				const proof = response.issued_macs[i].issuance_proof;
+				const mac = response.issued_macs[i].mac;
 				const preIssueCoin = preIssuanceCoins[i];
 				const coin = Coin.wasmCreateNew(
-					AmountAttribute.fromJSON(preIssueCoin.attributes[0]),
-					ScriptAttribute.fromJSON(preIssueCoin.attributes[1]),
+					preIssueCoin.attributes[0],
+					preIssueCoin.attributes[1],
 					mac
 				);
-				const mintPubkey = MintPublicKey.fromJSON(keys.kvac_keys);
+				const mintPubkey = keys.kvac_keys;
 
 				// Compose the coin
 				coins.push({
@@ -559,8 +553,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 					amount: preIssueCoin.amount,
 					script: preIssueCoin.script,
 					unit: preIssueCoin.unit,
-					coin: coin.toJSON(),
-					issuance_proof: proofObj
+					coin: coin,
+					issuance_proof: proof
 				} as KvacCoin);
 
 				// Verify issuance

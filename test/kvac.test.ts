@@ -11,57 +11,30 @@ import {
 import { hexToBytes } from '@noble/hashes/utils';
 
 describe('test kvac wasm library', () => {
-	it('should print the result of calling typeof on KVAC types', () => {
-		const scalar = Scalar.wasmCreateRandom();
-		const ge = GroupElement.wasmFromHex(
-			'03709e80c88487a2411e1ee4dfb9f22a861492d20c4765150c0c794abd70f8147c'
-		);
-
-		expect(scalar instanceof GroupElement).toBe(false);
-		expect(ge instanceof Scalar).toBe(false);
-
-		expect(scalar instanceof Scalar).toBe(true);
-		expect(ge instanceof GroupElement).toBe(true);
-	});
-
 	test('test create scalar', () => {
 		const scalar = Scalar.wasmCreateRandom();
-		const scalar_json = scalar.wasmSerializeToHex();
-		const scalar2 = Scalar.wasmFromHex(scalar_json);
-		console.log(scalar2.wasmSerializeToHex());
-
-		const scalar_bytes = scalar.wasmSerialize();
-		const scalar3 = Scalar.wasmFromBytesBE(scalar_bytes);
-
-		console.log(scalar3.wasmSerializeToHex());
+		const scalar2 = Scalar.wasmFromBytesBE(hexToBytes(scalar));
+		console.log(scalar2);
 	});
 
 	test('test create GroupElement', () => {
-		const ge = GroupElement.wasmFromHex(
-			'03709e80c88487a2411e1ee4dfb9f22a861492d20c4765150c0c794abd70f8147c'
+		const ge = GroupElement.wasmFromBytesBE(
+			hexToBytes('03709e80c88487a2411e1ee4dfb9f22a861492d20c4765150c0c794abd70f8147c')
 		);
-		const ge_json = ge.wasmSerializeToHex();
-		const ge2 = GroupElement.wasmFromHex(ge_json);
-		console.log(ge_json);
-
-		const ge_bytes = ge.wasmSerialize();
-		const ge3 = GroupElement.wasmFromBytesBE(ge_bytes);
-
-		console.log(ge3.wasmSerializeToHex());
+		const ge2 = GroupElement.wasmFromBytesBE(hexToBytes(ge));
+		console.log(ge2);
 	});
 
 	test('test create attributes', () => {
-		const amountAttribute = AmountAttribute.wasmCreateNew(BigInt(0));
-		const amountAttributeObj = amountAttribute.toJSON();
+		const amountAttributeObj = AmountAttribute.wasmCreateNew(BigInt(0));
 		expect(amountAttributeObj).toHaveProperty('a');
 		expect(amountAttributeObj).toHaveProperty('r');
 		expect(amountAttributeObj['a']).toBe(0);
 
-		const _ = AmountAttribute.fromJSON(amountAttribute.toJSON());
+		const _ = AmountAttribute.fromJSON(amountAttributeObj);
 
 		const script_bytes = hexToBytes('000000');
-		const scriptAttribute = ScriptAttribute.wasmCreateNew(script_bytes);
-		const scriptAttributeObj = scriptAttribute.toJSON();
+		const scriptAttributeObj = ScriptAttribute.wasmCreateNew(script_bytes);
 		expect(scriptAttributeObj).toHaveProperty('s');
 		expect(scriptAttributeObj).toHaveProperty('r');
 		expect(scriptAttributeObj['s']).toBe(
@@ -89,7 +62,7 @@ describe('test kvac wasm library', () => {
 
 		let verifyTranscript = CashuTranscript.wasmCreateNew();
 		expect(
-			BootstrapProof.wasmVerify(amountAttribute.wasmCommitment(), proof, verifyTranscript)
+			BootstrapProof.wasmVerify(AmountAttribute.wasmCommitment(amountAttribute), proof, verifyTranscript)
 		).toBe(true);
 	});
 
@@ -100,7 +73,7 @@ describe('test kvac wasm library', () => {
 
 		let verifyTranscript = CashuTranscript.wasmCreateNew();
 		expect(
-			BootstrapProof.wasmVerify(amountAttribute.wasmCommitment(), proof, verifyTranscript)
+			BootstrapProof.wasmVerify(AmountAttribute.wasmCommitment(amountAttribute), proof, verifyTranscript)
 		).toBe(false);
 	});
 
@@ -109,14 +82,14 @@ describe('test kvac wasm library', () => {
 		const verifyTranscript = CashuTranscript.wasmCreateNew();
 
 		const amountAttribute = AmountAttribute.wasmCreateNew(BigInt(45));
-		const amountCommitment = amountAttribute.wasmCommitment();
+		const amountCommitment = AmountAttribute.wasmCommitment(amountAttribute);
 
 		const zeroAttr = AmountAttribute.wasmCreateNew(BigInt(0));
-		const zeroCommitment = zeroAttr.wasmCommitment();
+		const zeroCommitment = AmountAttribute.wasmCommitment(zeroAttr);
 
 		const bulletproof = BulletProof.wasmCreate([amountAttribute, zeroAttr], proveTranscript);
 
-		expect(bulletproof.wasmVerify([amountCommitment, zeroCommitment], verifyTranscript)).toBe(true);
+		expect(BulletProof.wasmVerify([amountCommitment, zeroCommitment], bulletproof, verifyTranscript)).toBe(true);
 	});
 
 	test('test create wrong bulletproof for amount 2^32', () => {
@@ -125,11 +98,11 @@ describe('test kvac wasm library', () => {
 
 		const tooLarge = BigInt('0xFFFFFFFFFF');
 		const amountAttribute = AmountAttribute.wasmCreateNew(tooLarge);
-		const amountCommitment = amountAttribute.wasmCommitment();
+		const amountCommitment = AmountAttribute.wasmCommitment(amountAttribute);
 
 		const bulletproof = BulletProof.wasmCreate([amountAttribute], proveTranscript);
 
-		expect(bulletproof.wasmVerify([amountCommitment], verifyTranscript)).toBe(false);
+		expect(BulletProof.wasmVerify([amountCommitment], bulletproof, verifyTranscript)).toBe(false);
 	});
 
 	test('test custom JSON serialization for KVAC types instances', () => {

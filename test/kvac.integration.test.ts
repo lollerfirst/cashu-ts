@@ -50,7 +50,7 @@ describe('test ExtendedCashuWallet integration', () => {
 		const zeroCoins = await wallet.bootstrap(20);
 
 		const mintQuote = await wallet.createMintQuote(10, 'test');
-		await sleep(3000);
+		await sleep(2000);
 		const mintedCoins = await wallet.kvacMint(zeroCoins[0], zeroCoins[1], 10, mintQuote.quote);
 
 		console.log(JSON.stringify(mintedCoins, null, 2));
