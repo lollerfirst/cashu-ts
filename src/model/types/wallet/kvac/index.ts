@@ -121,7 +121,7 @@ export type KvacCoinInput = {
 	 *
 	 * [`ID`] from which we expect a signature.
 	 */
-	keysetId: string;
+	keyset_id: string;
 
 	/**
 	 * Script
@@ -142,5 +142,5 @@ export type KvacCoinInput = {
 	 *
 	 * [`RandomizedCoin`] version of a [`Coin`]
 	 */
-	randomizedCoin: RandomizedCoin;
+	randomized_coin: RandomizedCoin;
 };

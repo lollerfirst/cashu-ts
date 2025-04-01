@@ -1,6 +1,10 @@
 import { BulletProof, GroupElement, Scalar, ZKP } from 'cashu_kvac';
 import { KvacCoinOutput, KvacCoinInput } from '.';
 
+export type RangeZKP = {
+	BULLETPROOF?: BulletProof;
+};
+
 export type KvacBootstrapPayload = {
 	/**
 	 * Outputs
@@ -59,7 +63,7 @@ export type KvacSwapPayload = {
 	 *
 	 * A single [`RangeProof`] proving the outputs are all within range
 	 */
-	range_proof: BulletProof;
+	range_proof: RangeZKP;
 };
 
 export type KvacMintPayload = KvacSwapPayload & {

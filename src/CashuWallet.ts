@@ -82,7 +82,7 @@ class CashuWallet {
 	private _keys: Map<string, MintKeys> = new Map();
 	private _keysetId: string | undefined;
 	private _keysets: Array<MintKeyset> = [];
-	private _seed: Uint8Array | undefined = undefined;
+	protected _seed: Uint8Array | undefined = undefined;
 	protected _unit = DEFAULT_UNIT;
 	private _mintInfo: MintInfo | undefined = undefined;
 	private _denominationTarget = DEFAULT_DENOMINATION_TARGET;

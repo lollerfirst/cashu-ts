@@ -111,9 +111,12 @@ describe('test kvac wasm library', () => {
 		const amountAttribute = AmountAttribute.wasmCreateNew(BigInt(45));
 		const amountCommitment = amountAttribute.wasmCommitment();
 
-		const bulletproof = BulletProof.wasmCreate([amountAttribute], proveTranscript);
+		const zeroAttr = AmountAttribute.wasmCreateNew(BigInt(0));
+		const zeroCommitment = zeroAttr.wasmCommitment();
 
-		expect(bulletproof.wasmVerify([amountCommitment], verifyTranscript)).toBe(true);
+		const bulletproof = BulletProof.wasmCreate([amountAttribute, zeroAttr], proveTranscript);
+
+		expect(bulletproof.wasmVerify([amountCommitment, zeroCommitment], verifyTranscript)).toBe(true);
 	});
 
 	test('test create wrong bulletproof for amount 2^32', () => {
