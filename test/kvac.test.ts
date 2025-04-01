@@ -62,7 +62,11 @@ describe('test kvac wasm library', () => {
 
 		let verifyTranscript = CashuTranscript.wasmCreateNew();
 		expect(
-			BootstrapProof.wasmVerify(AmountAttribute.wasmCommitment(amountAttribute), proof, verifyTranscript)
+			BootstrapProof.wasmVerify(
+				AmountAttribute.wasmCommitment(amountAttribute),
+				proof,
+				verifyTranscript
+			)
 		).toBe(true);
 	});
 
@@ -73,7 +77,11 @@ describe('test kvac wasm library', () => {
 
 		let verifyTranscript = CashuTranscript.wasmCreateNew();
 		expect(
-			BootstrapProof.wasmVerify(AmountAttribute.wasmCommitment(amountAttribute), proof, verifyTranscript)
+			BootstrapProof.wasmVerify(
+				AmountAttribute.wasmCommitment(amountAttribute),
+				proof,
+				verifyTranscript
+			)
 		).toBe(false);
 	});
 
@@ -89,7 +97,9 @@ describe('test kvac wasm library', () => {
 
 		const bulletproof = BulletProof.wasmCreate([amountAttribute, zeroAttr], proveTranscript);
 
-		expect(BulletProof.wasmVerify([amountCommitment, zeroCommitment], bulletproof, verifyTranscript)).toBe(true);
+		expect(
+			BulletProof.wasmVerify([amountCommitment, zeroCommitment], bulletproof, verifyTranscript)
+		).toBe(true);
 	});
 
 	test('test create wrong bulletproof for amount 2^32', () => {

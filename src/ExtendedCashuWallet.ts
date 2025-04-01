@@ -360,7 +360,10 @@ export class ExtendedCashuWallet extends CashuWallet {
 				const output = {
 					id: keys.id,
 					t: tag,
-					c: [AmountAttribute.wasmCommitment(amountAttr), ScriptAttribute.wasmCommitment(scriptAttr)]
+					c: [
+						AmountAttribute.wasmCommitment(amountAttr),
+						ScriptAttribute.wasmCommitment(scriptAttr)
+					]
 				} as KvacCoinOutput;
 
 				// Pre-issuance information about this coin
@@ -463,14 +466,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 
 			// Create Balance Proof
 			const balanceProof: ZKP = BalanceProof.wasmCreate(
-				[
-					previousBalanceCoin.coin.amount,
-					zeroAmountCoin.coin.amount
-				], // inputs
-				[
-					preIssuanceCoins[0].attributes[0],
-					preIssuanceCoins[1].attributes[0]
-				], // outputs
+				[previousBalanceCoin.coin.amount, zeroAmountCoin.coin.amount], // inputs
+				[preIssuanceCoins[0].attributes[0], preIssuanceCoins[1].attributes[0]], // outputs
 				proveTranscript
 			);
 
@@ -490,10 +487,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 
 			// Create BulletProof
 			const rangeProof: BulletProof = BulletProof.wasmCreate(
-				[
-					preIssuanceCoins[0].attributes[0],
-					preIssuanceCoins[1].attributes[0]
-				],
+				[preIssuanceCoins[0].attributes[0], preIssuanceCoins[1].attributes[0]],
 				proveTranscript
 			);
 
@@ -509,10 +503,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 					keyset_id: keys.id,
 					script: '',
 					unit: this._unit,
-					randomized_coin: RandomizedCoin.wasmFromCoin(
-						previousBalanceCoin.coin,
-						true
-					)
+					randomized_coin: RandomizedCoin.wasmFromCoin(previousBalanceCoin.coin, true)
 				} as KvacCoinInput
 			];
 
@@ -526,7 +517,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				range_proof: { BULLETPROOF: rangeProof } as RangeZKP
 			} as KvacMintPayload;
 
-            console.log(`payload: ${JSON.stringify(payload, null, 2)}`);
+			console.log(`payload: ${JSON.stringify(payload, null, 2)}`);
 
 			const response: KvacMintResponse = await this.mint.kvacMint(payload);
 
