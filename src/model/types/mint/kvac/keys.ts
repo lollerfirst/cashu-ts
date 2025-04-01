@@ -1,10 +1,10 @@
-import { MintPublicKey } from "cashu_kvac";
+import { MintPublicKey } from 'cashu_kvac';
 
 /**
  * A mint keyset entry.
  */
 export type MintKvacKeyset = {
-    /**
+	/**
 	 * Keyset ID
 	 */
 	id: string;
@@ -20,7 +20,7 @@ export type MintKvacKeyset = {
 	 * Input fee for keyset (in ppk)
 	 */
 	input_fee_ppk?: number;
-}
+};
 
 /**
  * A mint KVAC keyset.
