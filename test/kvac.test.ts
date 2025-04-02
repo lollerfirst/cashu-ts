@@ -68,6 +68,9 @@ describe('test kvac wasm library', () => {
 				verifyTranscript
 			)
 		).toBe(true);
+
+		proveTranscript.free();
+		verifyTranscript.free();
 	});
 
 	test('test create wrong bootstrap proof for amount 1', () => {
@@ -83,6 +86,9 @@ describe('test kvac wasm library', () => {
 				verifyTranscript
 			)
 		).toBe(false);
+
+		proveTranscript.free();
+		verifyTranscript.free();
 	});
 
 	test('test create bulletproof for amount 45', () => {
@@ -100,6 +106,9 @@ describe('test kvac wasm library', () => {
 		expect(
 			BulletProof.wasmVerify([amountCommitment, zeroCommitment], bulletproof, verifyTranscript)
 		).toBe(true);
+
+		proveTranscript.free();
+		verifyTranscript.free();
 	});
 
 	test('test create wrong bulletproof for amount 2^32', () => {
@@ -113,6 +122,9 @@ describe('test kvac wasm library', () => {
 		const bulletproof = BulletProof.wasmCreate([amountAttribute], proveTranscript);
 
 		expect(BulletProof.wasmVerify([amountCommitment], bulletproof, verifyTranscript)).toBe(false);
+		
+		proveTranscript.free();
+		verifyTranscript.free();
 	});
 
 	test('test custom JSON serialization for KVAC types instances', () => {

@@ -319,10 +319,6 @@ export class ExtendedCashuWallet extends CashuWallet {
 				attributes: [amountAttr, scriptAttr]
 			} as KvacPreIssuanceCoin;
 
-			tag.free();
-			amountAttr.free();
-			scriptAttr.free();
-
 			preIssuanceCoins.push(preIssueCoin);
 			outputs.push(output);
 		}
@@ -369,7 +365,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 					amount: 0,
 					script: '',
 					unit: this._unit,
-					attributes: [amountAttr.toJSON(), scriptAttr.toJSON()]
+					attributes: [amountAttr, scriptAttr]
 				} as KvacPreIssuanceCoin;
 
 				// Create proof
@@ -503,7 +499,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 					randomized_coin: RandomizedCoin.wasmFromCoin(previousBalanceCoin.coin, true)
 				} as KvacCoinInput
 			];
-
+			
 			// Create mint payload
 			const payload = {
 				quote: quote,
@@ -514,7 +510,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				range_proof: { BULLETPROOF: rangeProof } as RangeZKP
 			} as KvacMintPayload;
 
-			console.log(`payload: ${JSON.stringify(payload, null, 2)}`);
+			console.log(`range_proof: ${JSON.stringify(payload.range_proof, null, 2)}`);
 
 			const response: KvacMintResponse = await this.mint.kvacMint(payload);
 
