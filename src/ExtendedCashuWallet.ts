@@ -340,40 +340,14 @@ export class ExtendedCashuWallet extends CashuWallet {
 			const n = size ?? 10;
 
 			// Create 0 value outputs and ZKPs
-			const preIssuanceCoins: Array<KvacPreIssuanceCoin> = [];
-			const outputs: Array<KvacCoinOutput> = [];
+			const [preIssuanceCoins, outputs] = this.createKvacRandomOutputs(new Array(n).fill(0), keys);
 			const proofs: Array<ZKP> = [];
 
+			// Create bootstrap proofs
 			for (let i = 0; i < n; ++i) {
-				const tag: Scalar = Scalar.wasmCreateRandom();
-				const amountAttr: AmountAttribute = AmountAttribute.wasmCreateNew(BigInt(0));
-				const scriptAttr: ScriptAttribute = ScriptAttribute.wasmCreateNew(new Uint8Array());
-
-				// Create payload output
-				const output = {
-					id: keys.id,
-					t: tag,
-					c: [
-						AmountAttribute.wasmCommitment(amountAttr),
-						ScriptAttribute.wasmCommitment(scriptAttr)
-					]
-				} as KvacCoinOutput;
-
-				// Pre-issuance information about this coin
-				const preIssueCoin = {
-					id: keys.id,
-					amount: 0,
-					script: '',
-					unit: this._unit,
-					attributes: [amountAttr, scriptAttr]
-				} as KvacPreIssuanceCoin;
-
-				// Create proof
+				const amountAttr = preIssuanceCoins[i].attributes[0];				
 				const proof = BootstrapProof.wasmCreate(amountAttr, proveTranscript);
 
-				// Push information
-				outputs.push(output);
-				preIssuanceCoins.push(preIssueCoin);
 				proofs.push(proof);
 			}
 
@@ -391,7 +365,6 @@ export class ExtendedCashuWallet extends CashuWallet {
 
 			const coins: Array<KvacCoin> = [];
 			for (let i = 0; i < n; ++i) {
-				// Create WASM objects from javascript generic objects
 				const proof = response.issued_macs[i].issuance_proof;
 				const mac = response.issued_macs[i].mac;
 				const preIssueCoin = preIssuanceCoins[i];
