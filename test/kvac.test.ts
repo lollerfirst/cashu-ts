@@ -1,14 +1,21 @@
 import { test, describe, expect, it } from 'vitest';
 import {
 	AmountAttribute,
+	BalanceProof,
 	BootstrapProof,
 	BulletProof,
 	CashuTranscript,
 	GroupElement,
+	MacProof,
+	MintPrivateKey,
+	MintPublicKey,
+	RandomizedCoin,
 	Scalar,
-	ScriptAttribute
+	ScriptAttribute,
+	ZKP
 } from 'cashu_kvac';
 import { hexToBytes } from '@noble/hashes/utils';
+import { KvacCoin, KvacCoinOutput, KvacPreIssuanceCoin } from '../src/model/types/wallet/kvac';
 
 describe('test kvac wasm library', () => {
 	test('test create scalar', () => {
@@ -91,20 +98,68 @@ describe('test kvac wasm library', () => {
 		verifyTranscript.free();
 	});
 
-	test('test create bulletproof for amount 45', () => {
+	test('test create ZKPs in order', () => {
 		const proveTranscript = CashuTranscript.wasmCreateNew();
 		const verifyTranscript = CashuTranscript.wasmCreateNew();
 
-		const amountAttribute = AmountAttribute.wasmCreateNew(BigInt(45));
-		const amountCommitment = AmountAttribute.wasmCommitment(amountAttribute);
+		const previousBalanceCoin = JSON.parse('{"id":"0091ba5a3f3ff4da","amount":0,"script":"","unit":"sat","coin":{"amount":{"a":0,"r":"4d35865f66ce361a05a7fe3440c06b88dd5e8315683076b391664ae03328ea70"},"script":{"s":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","r":"5757642a90f3e07198d0ff346bc1f379b7c3392e6bab7da3ad142f95e6c7e18a"},"mac":{"t":"e4576c69817d52bb28253177fa4363dd145fe936ee317de93b0b54a21808f983","V":"02b9f5be4f84bdba25c398913f26ca25fe853c9294506082c64797a45038bdf386"}},"issuance_proof":{"s":["cf31536f8c6a33f80f397bea6f91c5da8dca4f066806d560f675adeee12b81ee","c20216bb9fa9ad53cc2939e799972cf8737bb09b73f9caca94060d501effe4aa","947968242ca3cef1e25c66310168f7d9ebca49196e7882987166c5ba7c6ed2df","6052d6a3714ace9a5ee53a20546c51215028fa2a125711e74012172bcd727c19","7255cf7206c44112496fb123484f85f046f04e67bd7b4afd1f11e422522df1ae","ba776d692e2ea8b3e3fc2d2714a8e0c67176d50d3b9cdb172adf5cb13cb4b149"],"c":"a7b01b11d75158b6c4f3531671f53efc29b7d4ca98968d4b448084b56797e126"}}') as KvacCoin;
+		const zeroAmountCoin = JSON.parse('{"id":"0091ba5a3f3ff4da","amount":0,"script":"","unit":"sat","coin":{"amount":{"a":0,"r":"2f01eae8a97ae7780cedae3eb117844e62403b9fbeb73e86e81c78e101d3bf3e"},"script":{"s":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","r":"a4dd2c3fb97c30532cb22f3195494de7f925ef1f9df208d2a9ea23e53ee58af8"},"mac":{"t":"f7c8b19b284083d29a6f12462d267ee5b9543c77bde5c5e011022bc40fe4331d","V":"0295128a2a991ea94d02621cf743ea80f8fdf2ffd7d8cd8d62ce8db40da19f7486"}},"issuance_proof":{"s":["15fab7a82b981008e2e871d9729e335caacd1d3ee2602deaadb912436793bab5","f1d68964dc030274fff8425387206ca3830f55e7b40bd85751feb85e38f1265e","501100b5492b32a68c5e2f346a4ce60e020189aaf6960fefd361e8f613cbcc5e","c90c998fe8adf898cc5cd7174b0de6ca188329574dc4e186d593c355b216c36f","78ae2ab196d372bb8f8d4447c90d9425142a3a67f08475f6266c3b8dcbe620d0","7b03deb988976920a050c357b43a39243270a0482cb039b8b29ce0fd41a250c7"],"c":"2dc98a91251b3a210686d3f416e25a8610f1d58f3f1ac4e85d7856cd0b363618"}}') as KvacCoin;
+		const preIssuanceCoins = JSON.parse('[{"id":"0091ba5a3f3ff4da","amount":0,"script":"","unit":"sat","attributes":[{"a":0,"r":"46279fe719a874cfb71c29281335801fabe497d2c79fb49570157fffa7e06d07"},{"s":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","r":"e877fb351281bc1927d0f2ab28f4de330e079c777b75e2d835816ea87648630d"}]},{"id":"0091ba5a3f3ff4da","amount":10,"script":"","unit":"sat","attributes":[{"a":10,"r":"3a279cb170a147ef374f5c0886687a169b6cc9350961966b1f1cb8272b623246"},{"s":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","r":"47ab5ae2fd3e8e0e19024663a814a3d2bd2f83986c038d38630d2756615f8e16"}]}]') as Array<KvacPreIssuanceCoin>;
+		const outputs = JSON.parse('[{"id":"0091ba5a3f3ff4da","t":"ebb45857fa67a4af2ecb7a74d81689adc8bb52d3f0fbe7b2d811f8f9515a9bfa","c":["03702488d354ef70a684bf35e7277b1a06bcad9db71c6c5e1fc191c3d84643ff21","03496c1cd7155cf001de8bd281869b3e608b6089f25a0ec8b443c483ffee6ccea6"]},{"id":"0091ba5a3f3ff4da","t":"7afb411501c48a0f2e315e4e754b3a15479cd665218762c2970fb7c4ad913f2f","c":["025215fd896657aeeaebf0b60e545a7b9fdeed5ca3a33d66e7cb4c72cf8eb305a1","03b20c56610564be6909257dedc8f80c2786d6cf553e6c9b912ec20061d27d64af"]}]') as Array<KvacCoinOutput>;
 
-		const zeroAttr = AmountAttribute.wasmCreateNew(BigInt(0));
-		const zeroCommitment = AmountAttribute.wasmCommitment(zeroAttr);
+		const pubkey = JSON.parse('{"Cw":"02811c6c8551f526eed51b8a7f7ee9b109a8e420f0b8afe9a7e62c02d130159427","I":"031e3b518bb05e09865a4aabc6b4ad650c8e36f008f90853b9dd83dea2494d4579"}') as MintPublicKey;
+		const privkey = JSON.parse('{"w": "d4ff209c5a1fe7aace6821ab39c1f863e4d85b68ed8b0aca7905387d263b48ce","w_": "e23b9f154dca2b48bdc0aff753faefd6d398a250a06c403ae072c1d8916b154a","x0": "9b43ebe08d2f01d27ad3c7a867738499433abed03aea8a2a289b830e0f584d85","x1": "d3dc9e764bacbb9fb525cba4d553ae039cb5f962013ea9524e84acea38e01dcb","ya": "706639b7e4898000c9423de8a502535ad9294aa38ca88dc1263cd1b623e3432c","ys": "0fa440fdc679cb2d5d76a2871071d4d49146f7ca607fe8b44db25faef2bb0cc3","public_key": {"Cw": "02811c6c8551f526eed51b8a7f7ee9b109a8e420f0b8afe9a7e62c02d130159427","I": "031e3b518bb05e09865a4aabc6b4ad650c8e36f008f90853b9dd83dea2494d4579"}}') as MintPrivateKey;
 
-		const bulletproof = BulletProof.wasmCreate([amountAttribute, zeroAttr], proveTranscript);
+		const balanceProof: ZKP = BalanceProof.wasmCreate(
+			[zeroAmountCoin.coin.amount, previousBalanceCoin.coin.amount], // inputs
+			[preIssuanceCoins[0].attributes[0], preIssuanceCoins[1].attributes[0]], // outputs
+			proveTranscript
+		);
+
+		const zeroAmountMacProof: ZKP = MacProof.wasmCreate(
+			pubkey,
+			zeroAmountCoin.coin,
+			RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true),
+			proveTranscript
+		);
+		const previousBalanceMacProof: ZKP = MacProof.wasmCreate(
+			pubkey,
+			previousBalanceCoin.coin,
+			RandomizedCoin.wasmFromCoin(previousBalanceCoin.coin, true),
+			proveTranscript
+		);
+
+		const rangeProof: BulletProof = BulletProof.wasmCreate(
+			[preIssuanceCoins[0].attributes[0], preIssuanceCoins[1].attributes[0]],
+			proveTranscript
+		);
+		
+		expect(
+			BalanceProof.wasmVerify(
+				[RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true), RandomizedCoin.wasmFromCoin(previousBalanceCoin.coin, true)],
+				[outputs[0].c[0], outputs[1].c[0]],
+				BigInt(-10),
+				balanceProof,
+				verifyTranscript,
+			)
+		).toBe(true);
+		
+		expect(
+			MacProof.wasmVerify(
+				privkey, RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true),
+				new Uint8Array(), zeroAmountMacProof, verifyTranscript
+			)
+		).toBe(true);
 
 		expect(
-			BulletProof.wasmVerify([amountCommitment, zeroCommitment], bulletproof, verifyTranscript)
+			MacProof.wasmVerify(
+				privkey, RandomizedCoin.wasmFromCoin(previousBalanceCoin.coin, true),
+				new Uint8Array(), previousBalanceMacProof, verifyTranscript
+			)
+		).toBe(true);		
+
+		expect(
+			BulletProof.wasmVerify([outputs[0].c[0], outputs[1].c[0]], rangeProof, verifyTranscript)
 		).toBe(true);
 
 		proveTranscript.free();
