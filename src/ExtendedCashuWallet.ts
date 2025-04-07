@@ -21,7 +21,7 @@ import {
 	RandomizedCoin,
 	BalanceProof,
 	MacProof,
-	BulletProof,
+	BulletProof
 } from 'cashu_kvac';
 import {
 	KvacBootstrapPayload,
@@ -253,7 +253,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 			Math.max(
 				(coins.reduce(
 					(total: number, curr: KvacCoin) =>
-						total + (this._kvacKeysets.find((k: MintKeyset) => k.id === curr.id)?.input_fee_ppk || 0),
+						total +
+						(this._kvacKeysets.find((k: MintKeyset) => k.id === curr.id)?.input_fee_ppk || 0),
 					0
 				) +
 					999) /
@@ -377,7 +378,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 
 			// Create bootstrap proofs
 			for (let i = 0; i < n; ++i) {
-				const amountAttr = preIssuanceCoins[i].attributes[0];				
+				const amountAttr = preIssuanceCoins[i].attributes[0];
 				const proof = BootstrapProof.wasmCreate(amountAttr, proveTranscript);
 
 				proofs.push(proof);
@@ -461,7 +462,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 							keys
 					  )
 					: this.createKvacRandomOutputs([0, amount + previousBalanceCoin.amount], keys);
-			
+
 			// Create Balance Proof
 			const balanceProof: ZKP = BalanceProof.wasmCreate(
 				[previousBalanceCoin.coin.amount, zeroAmountCoin.coin.amount], // inputs
@@ -482,7 +483,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				RandomizedCoin.wasmFromCoin(previousBalanceCoin.coin, true),
 				proveTranscript
 			);
-			
+
 			// Create BulletProof
 			const rangeProof: BulletProof = BulletProof.wasmCreate(
 				[preIssuanceCoins[0].attributes[0], preIssuanceCoins[1].attributes[0]],
@@ -504,7 +505,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 					randomized_coin: RandomizedCoin.wasmFromCoin(previousBalanceCoin.coin, true)
 				} as KvacCoinInput
 			];
-			
+
 			// Create mint payload
 			const payload = {
 				quote: quote,
@@ -566,7 +567,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 	async kvacSwap(
 		inputs: Array<KvacCoin>,
 		outputs: Array<KvacCoinOutput>,
-		preIssuanceOutputs: Array<KvacPreIssuanceCoin>,
+		preIssuanceOutputs: Array<KvacPreIssuanceCoin>
 	): Promise<Array<KvacCoin>> {
 		const proveTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
 		const verifyTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
@@ -576,7 +577,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 			// Create Balance Proof
 			const balanceProof: ZKP = BalanceProof.wasmCreate(
 				inputs.map((i) => i.coin.amount), // inputs' randomized coins
-				preIssuanceOutputs.map((o) => o.attributes[0]) , // outputs' amount commitments
+				preIssuanceOutputs.map((o) => o.attributes[0]), // outputs' amount commitments
 				proveTranscript
 			);
 
@@ -587,23 +588,23 @@ export class ExtendedCashuWallet extends CashuWallet {
 						keys.kvac_keys,
 						input.coin,
 						RandomizedCoin.wasmFromCoin(input.coin, true),
-						proveTranscript,
+						proveTranscript
 					)
 				);
 			}
 
 			const rangeProof: BulletProof = BulletProof.wasmCreate(
-				preIssuanceOutputs.map((o) => o.attributes[0]),	// Outputs amount attributes
+				preIssuanceOutputs.map((o) => o.attributes[0]), // Outputs amount attributes
 				proveTranscript
 			);
-			
+
 			// Create payload inputs (randomized coins)
 			const payloadInputs = inputs.map((i) => {
 				return {
 					keyset_id: i.id,
 					unit: this._unit,
 					randomized_coin: RandomizedCoin.wasmFromCoin(i.coin, true)
-				} as KvacCoinInput
+				} as KvacCoinInput;
 			});
 
 			const swapPayload = {
@@ -611,12 +612,12 @@ export class ExtendedCashuWallet extends CashuWallet {
 				outputs: outputs,
 				balance_proof: balanceProof,
 				mac_proofs: macProofs,
-				range_proof: { BULLETPROOF: rangeProof } as RangeZKP,
+				range_proof: { BULLETPROOF: rangeProof } as RangeZKP
 			} as KvacSwapPayload;
 
 			//console.log("swap payload: " + JSON.stringify(swapPayload, null, 2))
 			const response = await this.mint.kvacSwap(swapPayload);
-			
+
 			const coins: Array<KvacCoin> = [];
 			for (let i = 0; i < swapPayload.outputs.length; ++i) {
 				const proof = response.issued_macs[i].issuance_proof;
@@ -666,7 +667,6 @@ export class ExtendedCashuWallet extends CashuWallet {
 			keysetId?: string;
 		}
 	): Promise<Array<KvacCoin>> {
-
 		const keys = await this.getKvacKeys(options?.keysetId);
 
 		// Calculate the fee for the swap
@@ -674,7 +674,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 
 		// Check the constraints
 		if (balanceCoin.amount - fee - amountToSend < 0) {
-			throw new Error("balanceCoin.amount - fee < amountToSend")
+			throw new Error('balanceCoin.amount - fee < amountToSend');
 		}
 
 		// Get pre-issuance coins and corresponding payload outputs
@@ -685,13 +685,12 @@ export class ExtendedCashuWallet extends CashuWallet {
 						this._seed,
 						options.counter,
 						keys
-					)
+				  )
 				: this.createKvacRandomOutputs(
-					[amountToSend, balanceCoin.amount - fee - amountToSend],
-					keys
-				);
+						[amountToSend, balanceCoin.amount - fee - amountToSend],
+						keys
+				  );
 
-		
 		// Perform swap
 		return this.kvacSwap([zeroAmountCoin, balanceCoin], outputs, preIssuanceCoins);
 	}
@@ -709,7 +708,6 @@ export class ExtendedCashuWallet extends CashuWallet {
 			keysetId?: string;
 		}
 	): Promise<Array<KvacCoin>> {
-
 		const keys = await this.getKvacKeys(options?.keysetId);
 
 		// Calculate the fee for the swap
@@ -717,7 +715,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 
 		// Check the constraints
 		if (balanceCoin.amount + coinToReceive.amount - fee < 0) {
-			throw new Error("balanceCoin.amount + coinToReceive.amount < fee")
+			throw new Error('balanceCoin.amount + coinToReceive.amount < fee');
 		}
 
 		// Get pre-issuance coins and corresponding payload outputs
@@ -728,13 +726,9 @@ export class ExtendedCashuWallet extends CashuWallet {
 						this._seed,
 						options.counter,
 						keys
-					)
-				: this.createKvacRandomOutputs(
-					[0, balanceCoin.amount + coinToReceive.amount - fee],
-					keys
-				);
+				  )
+				: this.createKvacRandomOutputs([0, balanceCoin.amount + coinToReceive.amount - fee], keys);
 
-		
 		// Perform swap
 		return this.kvacSwap([coinToReceive, balanceCoin], outputs, preIssuanceCoins);
 	}

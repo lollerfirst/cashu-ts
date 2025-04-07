@@ -78,9 +78,9 @@ describe('test ExtendedCashuWallet integration', () => {
 
 		expect(sendCoin).toBeDefined();
 		expect(sendCoin.amount).toEqual(13);
-		
+
 		expect(keepCoin).toBeDefined();
-		expect(keepCoin.amount).toBeLessThanOrEqual(1337-13);
+		expect(keepCoin.amount).toBeLessThanOrEqual(1337 - 13);
 	});
 	test('kvac receive', async () => {
 		const mint = new ExtendedCashuMint(mintUrl);
@@ -104,5 +104,5 @@ describe('test ExtendedCashuWallet integration', () => {
 
 		expect(newBalanceCoin).toBeDefined();
 		expect(newBalanceCoin.amount).toBeLessThanOrEqual(3338);
-	})
+	});
 });
