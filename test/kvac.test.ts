@@ -165,7 +165,25 @@ describe('test kvac wasm library', () => {
 		proveTranscript.free();
 		verifyTranscript.free();
 	});
+	test('test create bulletproof with 3 amount commitments', () => {
+		const proveTranscript = CashuTranscript.wasmCreateNew();
+		const verifyTranscript = CashuTranscript.wasmCreateNew();
 
+		const attributes: Array<AmountAttribute> = [
+            AmountAttribute.wasmCreateNew(BigInt(2)),
+            AmountAttribute.wasmCreateNew(BigInt(1)),
+            AmountAttribute.wasmCreateNew(BigInt(14)),
+        ];
+		console.log(`attributes: ${JSON.stringify(attributes, null, 2)}`)
+		const amountCommitments: Array<GroupElement> = [];
+        for (const attr of attributes) {
+            amountCommitments.push(AmountAttribute.wasmCommitment(attr));
+        }
+
+		const rangeProof = BulletProof.wasmCreate(attributes, proveTranscript);
+		console.log(`rangeProof: ${JSON.stringify(rangeProof, null, 2)}`);
+		expect(BulletProof.wasmVerify(amountCommitments, rangeProof, verifyTranscript)).toBe(true);
+	}),
 	test('test create wrong bulletproof for amount 2^32', () => {
 		const proveTranscript = CashuTranscript.wasmCreateNew();
 		const verifyTranscript = CashuTranscript.wasmCreateNew();

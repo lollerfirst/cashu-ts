@@ -22,6 +22,7 @@ import {
 	BalanceProof,
 	MacProof,
 	BulletProof,
+	GroupElement,
 } from 'cashu_kvac';
 import {
 	KvacBootstrapPayload,
@@ -429,7 +430,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 							keys
 					  )
 					: this.createKvacRandomOutputs([0, amount + previousBalanceCoin.amount], keys);
-
+			
 			// Create Balance Proof
 			const balanceProof: ZKP = BalanceProof.wasmCreate(
 				[previousBalanceCoin.coin.amount, zeroAmountCoin.coin.amount], // inputs
@@ -450,7 +451,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				RandomizedCoin.wasmFromCoin(previousBalanceCoin.coin, true),
 				proveTranscript
 			);
-
+			
 			// Create BulletProof
 			const rangeProof: BulletProof = BulletProof.wasmCreate(
 				[preIssuanceCoins[0].attributes[0], preIssuanceCoins[1].attributes[0]],
@@ -482,8 +483,6 @@ export class ExtendedCashuWallet extends CashuWallet {
 				mac_proofs: [zeroAmountMacProof, previousBalanceMacProof],
 				range_proof: { BULLETPROOF: rangeProof } as RangeZKP
 			} as KvacMintPayload;
-
-			console.log(`range_proof: ${JSON.stringify(payload.range_proof, null, 2)}`);
 
 			const response: KvacMintResponse = await this.mint.kvacMint(payload);
 
