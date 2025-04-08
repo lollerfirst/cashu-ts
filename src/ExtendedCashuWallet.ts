@@ -436,13 +436,13 @@ export class ExtendedCashuWallet extends CashuWallet {
 	/**
 	 * Mint balance and add it to a `previousBalanceCoin`
 	 * @param previousBalanceCoin the coin encoding the previous balance
-	 * @param zeroAmountCoin a coin worth zero, obtained with the bootstrap process
+	 * @param decoyInput a coin worth zero, obtained with the bootstrap process
 	 * @param amount the amount to mint
 	 * @param quote the quote id
 	 */
 	async kvacMint(
 		previousBalanceCoin: KvacCoin,
-		zeroAmountCoin: KvacCoin,
+		decoyInput: KvacCoin,
 		amount: number,
 		quote: string,
 		options?: {
@@ -468,7 +468,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 
 			// Create Balance Proof
 			const balanceProof: ZKP = BalanceProof.wasmCreate(
-				[previousBalanceCoin.coin.amount, zeroAmountCoin.coin.amount], // inputs
+				[previousBalanceCoin.coin.amount, decoyInput.coin.amount], // inputs
 				[preIssuanceCoins[0].attributes[0], preIssuanceCoins[1].attributes[0]], // outputs
 				proveTranscript
 			);
@@ -476,8 +476,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 			// Create MAC Proofs
 			const zeroAmountMacProof: ZKP = MacProof.wasmCreate(
 				keys.kvac_keys,
-				zeroAmountCoin.coin,
-				RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true),
+				decoyInput.coin,
+				RandomizedCoin.wasmFromCoin(decoyInput.coin, true),
 				proveTranscript
 			);
 			const previousBalanceMacProof: ZKP = MacProof.wasmCreate(
@@ -499,7 +499,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 					keyset_id: keys.id,
 					script: '',
 					unit: this._unit,
-					randomized_coin: RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true)
+					randomized_coin: RandomizedCoin.wasmFromCoin(decoyInput.coin, true)
 				} as KvacCoinInput,
 				{
 					keyset_id: keys.id,
@@ -664,7 +664,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 	async kvacSend(
 		amountToSend: number,
 		balanceCoin: KvacCoin,
-		zeroAmountCoin: KvacCoin,
+		decoyInput: KvacCoin,
 		options?: {
 			counter?: number;
 			keysetId?: string;
@@ -673,7 +673,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 		const keys = await this.getKvacKeys(options?.keysetId);
 
 		// Calculate the fee for the swap
-		const fee = this.getFeesForCoins([zeroAmountCoin, balanceCoin]);
+		const fee = this.getFeesForCoins([decoyInput, balanceCoin]);
 
 		// Check the constraints
 		if (balanceCoin.amount - fee - amountToSend < 0) {
@@ -695,7 +695,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				  );
 
 		// Perform swap
-		return this.kvacSwap([zeroAmountCoin, balanceCoin], outputs, preIssuanceCoins);
+		return this.kvacSwap([decoyInput, balanceCoin], outputs, preIssuanceCoins);
 	}
 
 	/**
@@ -742,7 +742,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 	async kvacMelt(
 		meltQuote: MeltQuoteResponse,
 		balanceCoin: KvacCoin,
-		zeroAmountCoin: KvacCoin,
+		decoyInput: KvacCoin,
 		options?: {
 			keysetId?: string,
 			counter?: number,
@@ -755,7 +755,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 			const keys = await this.getKvacKeys(options?.keysetId);
 
 			// Calculate the fee for the swap
-			const fee = this.getFeesForCoins([zeroAmountCoin, balanceCoin]);
+			const fee = this.getFeesForCoins([decoyInput, balanceCoin]);
 			const pegOutFeeReserve = meltQuote.fee_reserve;
 
 			if (balanceCoin.amount - meltQuote.amount < pegOutFeeReserve + fee) {
@@ -776,7 +776,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 			
 			// Create Balance Proof
 			const balanceProof: ZKP = BalanceProof.wasmCreate(
-				[balanceCoin.coin.amount, zeroAmountCoin.coin.amount], // inputs
+				[balanceCoin.coin.amount, decoyInput.coin.amount], // inputs
 				[preIssuanceCoins[0].attributes[0], preIssuanceCoins[1].attributes[0]], // outputs
 				proveTranscript
 			);
@@ -784,8 +784,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 			// Create MAC Proofs
 			const zeroAmountMacProof: ZKP = MacProof.wasmCreate(
 				keys.kvac_keys,
-				zeroAmountCoin.coin,
-				RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true),
+				decoyInput.coin,
+				RandomizedCoin.wasmFromCoin(decoyInput.coin, true),
 				proveTranscript
 			);
 			const previousBalanceMacProof: ZKP = MacProof.wasmCreate(
@@ -807,7 +807,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 					keyset_id: keys.id,
 					script: '',
 					unit: this._unit,
-					randomized_coin: RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true)
+					randomized_coin: RandomizedCoin.wasmFromCoin(decoyInput.coin, true)
 				} as KvacCoinInput,
 				{
 					keyset_id: keys.id,

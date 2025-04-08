@@ -204,23 +204,22 @@ describe('test kvac wasm library', () => {
 		const rangeProof = BulletProof.wasmCreate(attributes, proveTranscript);
 		console.log(`rangeProof: ${JSON.stringify(rangeProof, null, 2)}`);
 		expect(BulletProof.wasmVerify(amountCommitments, rangeProof, verifyTranscript)).toBe(true);
-	}),
-		test('test create wrong bulletproof for amount 2^32', () => {
-			const proveTranscript = CashuTranscript.wasmCreateNew();
-			const verifyTranscript = CashuTranscript.wasmCreateNew();
+	});
+	test('test create wrong bulletproof for amount 2^32', () => {
+		const proveTranscript = CashuTranscript.wasmCreateNew();
+		const verifyTranscript = CashuTranscript.wasmCreateNew();
 
-			const tooLarge = BigInt('0xFFFFFFFFFF');
-			const amountAttribute = AmountAttribute.wasmCreateNew(tooLarge);
-			const amountCommitment = AmountAttribute.wasmCommitment(amountAttribute);
+		const tooLarge = BigInt('0xFFFFFFFFFF');
+		const amountAttribute = AmountAttribute.wasmCreateNew(tooLarge);
+		const amountCommitment = AmountAttribute.wasmCommitment(amountAttribute);
 
-			const bulletproof = BulletProof.wasmCreate([amountAttribute], proveTranscript);
+		const bulletproof = BulletProof.wasmCreate([amountAttribute], proveTranscript);
 
-			expect(BulletProof.wasmVerify([amountCommitment], bulletproof, verifyTranscript)).toBe(false);
+		expect(BulletProof.wasmVerify([amountCommitment], bulletproof, verifyTranscript)).toBe(false);
 
-			proveTranscript.free();
-			verifyTranscript.free();
-		});
-
+		proveTranscript.free();
+		verifyTranscript.free();
+	});
 	test('test custom JSON serialization for KVAC types instances', () => {
 		const blindingFactor = hexToBytes(
 			'a6c983cdf82518f585fbd307b08f2491869f35c29b6036630ce4224e38335a1b'
