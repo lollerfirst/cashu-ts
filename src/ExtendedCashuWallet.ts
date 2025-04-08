@@ -1,4 +1,5 @@
-import { GetInfoResponse, MintKeys, MintKeyset } from '@cashu/cashu-ts';
+import { GetInfoResponse, MeltQuoteResponse } from './model/types/mint/responses'
+import { MeltQuoteState, MintKeys, MintKeyset } from './model/types/index';
 import { CashuWallet } from './CashuWallet';
 import { ExtendedCashuMint } from './ExtendedCashuMint';
 import { MintKvacKeys, MintKvacKeyset } from './model/types/mint/kvac/keys';
@@ -25,6 +26,7 @@ import {
 } from 'cashu_kvac';
 import {
 	KvacBootstrapPayload,
+	KvacMeltPayload,
 	KvacMintPayload,
 	KvacSwapPayload,
 	RangeZKP
@@ -434,6 +436,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 	/**
 	 * Mint balance and add it to a `previousBalanceCoin`
 	 * @param previousBalanceCoin the coin encoding the previous balance
+	 * @param zeroAmountCoin a coin worth zero, obtained with the bootstrap process
 	 * @param amount the amount to mint
 	 * @param quote the quote id
 	 */
@@ -699,6 +702,9 @@ export class ExtendedCashuWallet extends CashuWallet {
 	 * Split balance coin into send and keep coins
 	 * @param amountToSend amount to send
 	 * @param balanceCoin coin with the current balance
+	 * @param options options:
+	 * * @param counter for deriving blinding factors deterministically,
+	 * * @param keysetId to use a specific keyset.
 	 */
 	async kvacReceive(
 		coinToReceive: KvacCoin,
@@ -731,5 +737,146 @@ export class ExtendedCashuWallet extends CashuWallet {
 
 		// Perform swap
 		return this.kvacSwap([coinToReceive, balanceCoin], outputs, preIssuanceCoins);
+	}
+
+	async kvacMelt(
+		meltQuote: MeltQuoteResponse,
+		balanceCoin: KvacCoin,
+		zeroAmountCoin: KvacCoin,
+		options?: {
+			keysetId?: string,
+			counter?: number,
+		}
+	): Promise<[MeltQuoteState, Array<KvacCoin>]> {
+		const proveTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
+		const verifyTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
+
+		try {
+			const keys = await this.getKvacKeys(options?.keysetId);
+
+			// Calculate the fee for the swap
+			const fee = this.getFeesForCoins([zeroAmountCoin, balanceCoin]);
+			const pegOutFeeReserve = meltQuote.fee_reserve;
+
+			if (balanceCoin.amount - meltQuote.amount < pegOutFeeReserve + fee) {
+				throw new Error('balanceCoin.amount < pegOutFeeReserve + fee');
+			}
+
+			// Get pre-issuance coins and corresponding payload outputs
+			const [preIssuanceCoins, outputs] =
+				options?.counter && this._seed
+					? this.createKvacDeterministicOutputs(
+							[0, balanceCoin.amount - meltQuote.amount - pegOutFeeReserve - fee], // 1 output is of amountToSend, 1 output with the change
+							this._seed,
+							options.counter,
+							keys
+					)
+					: this.createKvacRandomOutputs([0, balanceCoin.amount - meltQuote.amount - pegOutFeeReserve - fee], keys);
+
+			
+			// Create Balance Proof
+			const balanceProof: ZKP = BalanceProof.wasmCreate(
+				[balanceCoin.coin.amount, zeroAmountCoin.coin.amount], // inputs
+				[preIssuanceCoins[0].attributes[0], preIssuanceCoins[1].attributes[0]], // outputs
+				proveTranscript
+			);
+
+			// Create MAC Proofs
+			const zeroAmountMacProof: ZKP = MacProof.wasmCreate(
+				keys.kvac_keys,
+				zeroAmountCoin.coin,
+				RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true),
+				proveTranscript
+			);
+			const previousBalanceMacProof: ZKP = MacProof.wasmCreate(
+				keys.kvac_keys,
+				balanceCoin.coin,
+				RandomizedCoin.wasmFromCoin(balanceCoin.coin, true),
+				proveTranscript
+			);
+
+			// Create BulletProof
+			const rangeProof: BulletProof = BulletProof.wasmCreate(
+				[preIssuanceCoins[0].attributes[0], preIssuanceCoins[1].attributes[0]],
+				proveTranscript
+			);
+
+			// Create the inputs of the transaction
+			const inputs: Array<KvacCoinInput> = [
+				{
+					keyset_id: keys.id,
+					script: '',
+					unit: this._unit,
+					randomized_coin: RandomizedCoin.wasmFromCoin(zeroAmountCoin.coin, true)
+				} as KvacCoinInput,
+				{
+					keyset_id: keys.id,
+					script: '',
+					unit: this._unit,
+					randomized_coin: RandomizedCoin.wasmFromCoin(balanceCoin.coin, true)
+				} as KvacCoinInput
+			];
+
+			const meltPayload: KvacMeltPayload = {
+				quote: meltQuote.quote,
+				inputs: inputs,
+				outputs: outputs,
+				balance_proof: balanceProof,
+				mac_proofs: [zeroAmountMacProof, previousBalanceMacProof],
+				range_proof: { BULLETPROOF: rangeProof } as RangeZKP,
+			} as KvacMeltPayload;
+
+
+			const response = await this.mint.kvacMelt(meltPayload);
+
+			if (response.state !== MeltQuoteState.PAID) {
+				return [response.state, []];
+			}
+			
+			if (response.issued_macs.length != meltPayload.outputs.length) {
+				throw new Error('Mint returned funny length of issued MACs');
+			}
+
+			const coins: Array<KvacCoin> = [];
+			for (let i = 0; i < meltPayload.outputs.length; ++i) {
+				const proof = response.issued_macs[i].issuance_proof;
+				const mac = response.issued_macs[i].mac;
+				const preIssueCoin = preIssuanceCoins[i];
+
+				// Tweak the last output commitment, adding the unspent fee return
+				// that the Mint gave us.
+				if (response.fee_return > 0 && i === meltPayload.outputs.length-1) {
+					preIssueCoin.attributes[0] = AmountAttribute.wasmTweakAmount(preIssueCoin.attributes[0], BigInt(response.fee_return))
+				}
+
+				const coin = Coin.wasmCreateNew(
+					preIssueCoin.attributes[0],
+					preIssueCoin.attributes[1],
+					mac
+				);
+				const mintPubkey = keys.kvac_keys;
+
+				// Compose the coin
+				coins.push({
+					id: keys.id,
+					amount: preIssueCoin.amount,
+					script: preIssueCoin.script,
+					unit: preIssueCoin.unit,
+					coin: coin,
+					issuance_proof: proof
+				} as KvacCoin);
+
+				// Verify issuance
+				if (!IParamsProof.wasmVerify(mintPubkey, coin, proof, verifyTranscript)) {
+					console.error(`Couldn't verify issuance for issued coins ${i}`);
+				}
+			}
+
+			return [response.state, coins];
+
+		} finally {
+			proveTranscript.free();
+			verifyTranscript.free();
+		}
 	}
 }

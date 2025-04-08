@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { ExtendedCashuMint } from '../src/ExtendedCashuMint';
 import { ExtendedCashuWallet } from '../src/ExtendedCashuWallet';
+import { MeltQuoteResponse, MeltQuoteState } from '../src/model/types';
 
 const mintUrl = 'http://localhost:3338';
 const unit = 'sat';
@@ -105,4 +106,24 @@ describe('test ExtendedCashuWallet integration', () => {
 		expect(newBalanceCoin).toBeDefined();
 		expect(newBalanceCoin.amount).toBeLessThanOrEqual(3338);
 	});
+	/*
+	test('kvac melt', async () => {
+		const mint = new ExtendedCashuMint(mintUrl);
+		const wallet = new ExtendedCashuWallet(mint);
+
+		const zeroAmountCoins = await wallet.bootstrap(2);
+
+		const mintQuote = await wallet.createMintQuote(2337, 'test');
+		const meltQuote: MeltQuoteResponse = await wallet.createMeltQuote('lnbc20u1p3u27nppp5pm074ffk6m42lvae8c6847z7xuvhyknwgkk7pzdce47grf2ksqwsdpv2phhwetjv4jzqcneypqyc6t8dp6xu6twva2xjuzzda6qcqzpgxqyz5vqsp5sw6n7cztudpl5m5jv3z6dtqpt2zhd3q6dwgftey9qxv09w82rgjq9qyyssqhtfl8wv7scwp5flqvmgjjh20nf6utvv5daw5h43h69yqfwjch7wnra3cn94qkscgewa33wvfh7guz76rzsfg9pwlk8mqd27wavf2udsq3yeuju');
+		await sleep(2000);
+
+		const [zeroCoin, balanceCoin] = await wallet.kvacMint(zeroAmountCoins[0], zeroAmountCoins[1], 2337, mintQuote.quote);
+
+		const [state, [_zeroCoin1, newBalanceCoin]] = await wallet.kvacMelt(meltQuote, balanceCoin, zeroCoin);
+
+		expect(state).toBe(MeltQuoteState.PAID);
+		console.log(`balance coin after melt: ${JSON.stringify(newBalanceCoin, null, 2)}`);
+		expect(newBalanceCoin.amount).toBeLessThanOrEqual(2337-2000);
+	});
+	*/
 });
