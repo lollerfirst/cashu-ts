@@ -1,5 +1,7 @@
 import { CashuMint } from './CashuMint.js';
 import { CashuWallet } from './CashuWallet.js';
+import { ExtendedCashuMint } from './ExtendedCashuMint.js';
+import { ExtendedCashuWallet } from './ExtendedCashuWallet.js';
 import { OutputData } from './model/OutputData.js';
 import { PaymentRequest } from './model/PaymentRequest.js';
 import { setGlobalRequestOptions } from './request.js';
@@ -19,6 +21,8 @@ export * from './model/types/index.js';
 export {
 	CashuMint,
 	CashuWallet,
+	ExtendedCashuWallet,
+	ExtendedCashuMint,
 	PaymentRequest,
 	OutputData,
 	getDecodedToken,
