@@ -13,7 +13,7 @@ import {
 import {
 	AmountAttribute,
 	BootstrapProof,
-	IParamsProof,
+	IssuanceProof,
 	CashuTranscript,
 	Scalar,
 	ScriptAttribute,
@@ -421,7 +421,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				} as KvacCoin);
 
 				// Verify issuance
-				if (!IParamsProof.wasmVerify(mintPubkey, coin, proof, verifyTranscript)) {
+				if (!IssuanceProof.wasmVerify(mintPubkey, coin, proof)) {
 					throw new Error(`Couldn't verify issuance for bootstrap coin ${i}`);
 				}
 			}
@@ -549,7 +549,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				} as KvacCoin);
 
 				// Verify issuance
-				if (!IParamsProof.wasmVerify(mintPubkey, coin, proof, verifyTranscript)) {
+				if (!IssuanceProof.wasmVerify(mintPubkey, coin, proof)) {
 					console.error(`Couldn't verify issuance for issued coins ${i}`);
 				}
 			}
@@ -644,7 +644,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				} as KvacCoin);
 
 				// Verify issuance
-				if (!IParamsProof.wasmVerify(mintPubkey, coin, proof, verifyTranscript)) {
+				if (!IssuanceProof.wasmVerify(mintPubkey, coin, proof)) {
 					console.error(`Couldn't verify issuance for issued coins ${i}`);
 				}
 			}
@@ -749,7 +749,6 @@ export class ExtendedCashuWallet extends CashuWallet {
 		}
 	): Promise<[MeltQuoteState, Array<KvacCoin>]> {
 		const proveTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
-		const verifyTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
 
 		try {
 			const keys = await this.getKvacKeys(options?.keysetId);
@@ -867,7 +866,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 				} as KvacCoin);
 
 				// Verify issuance
-				if (!IParamsProof.wasmVerify(mintPubkey, coin, proof, verifyTranscript)) {
+				if (!IssuanceProof.wasmVerify(mintPubkey, coin, proof)) {
 					console.error(`Couldn't verify issuance for issued coins ${i}`);
 				}
 			}
@@ -876,7 +875,6 @@ export class ExtendedCashuWallet extends CashuWallet {
 
 		} finally {
 			proveTranscript.free();
-			verifyTranscript.free();
 		}
 	}
 }
