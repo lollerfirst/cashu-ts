@@ -40,7 +40,7 @@ let wasmInit = false;
 async function ensureKvacWasmInit() {
 	if (!wasmInit) {
 		try {
-			const instance = await init();
+			const instance = await init('../node_modules/cashu_kvac/cashu_kvac_bg.wasm');
 			console.log(JSON.stringify(instance, null, 2))
 			wasmInit = true;
 		} catch (e: any) {
