@@ -1,6 +1,8 @@
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
+import topLevelAwait from 'vite-plugin-top-level-await';
+import wasm from 'vite-plugin-wasm';
 
 const config =
 	process.env.BUILD_FORMAT === 'iife'
@@ -16,7 +18,11 @@ const config =
 					},
 					sourcemap: true
 				},
-				plugins: [dts({ tsconfigPath: './tsconfig.json', outDir: 'lib/types' })]
+				plugins: [
+					dts({ tsconfigPath: './tsconfig.json', outDir: 'lib/types' }),
+					topLevelAwait(),
+					wasm(),
+				]
 		  })
 		: defineConfig({
 				build: {
@@ -37,7 +43,11 @@ const config =
 					},
 					sourcemap: true
 				},
-				plugins: [dts({ tsconfigPath: './tsconfig.json', outDir: 'lib/types' })]
+				plugins: [
+					dts({ tsconfigPath: './tsconfig.json', outDir: 'lib/types' }),
+					topLevelAwait(),
+					wasm(),
+				]
 		  });
 
 export default config;

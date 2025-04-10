@@ -10,7 +10,7 @@ import {
 	KvacCoinOutput,
 	KvacPreIssuanceCoin
 } from './model/types/wallet/kvac';
-import {
+import init, {
 	AmountAttribute,
 	BootstrapProof,
 	IssuanceProof,
@@ -23,7 +23,7 @@ import {
 	BalanceProof,
 	MacProof,
 	BulletProof
-} from 'cashu_kvac';
+} from 'cashu_kvac/cashu_kvac.js';
 import {
 	KvacBootstrapPayload,
 	KvacMeltPayload,
@@ -34,6 +34,20 @@ import {
 import { deriveAmountBlindingFactor, deriveScriptBlindingFactor, deriveTag } from './crypto/kvac';
 import { bytesToHex } from '@noble/hashes/utils';
 import { KvacMintResponse } from './model/types/mint/kvac/responses';
+
+// Ensure the Wasm is loaded
+let wasmInit = false;
+async function ensureKvacWasmInit() {
+	if (!wasmInit) {
+		try {
+			const instance = await init();
+			console.log(JSON.stringify(instance, null, 2))
+			wasmInit = true;
+		} catch (e: any) {
+			throw new Error("Failed to initialize Wasm: " + e.toString());
+		}
+	}
+}
 
 export class ExtendedCashuWallet extends CashuWallet {
 	private _kvacKeys: Map<string, MintKvacKeys> = new Map();
@@ -367,6 +381,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 	 * @returns kvac coins
 	 */
 	async bootstrap(size?: number): Promise<Array<KvacCoin>> {
+		await ensureKvacWasmInit();
+
 		const proveTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
 		const verifyTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
 
@@ -450,6 +466,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 			keysetId?: string;
 		}
 	): Promise<Array<KvacCoin>> {
+		await ensureKvacWasmInit();
+
 		const proveTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
 		const verifyTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
 
@@ -572,6 +590,8 @@ export class ExtendedCashuWallet extends CashuWallet {
 		outputs: Array<KvacCoinOutput>,
 		preIssuanceOutputs: Array<KvacPreIssuanceCoin>
 	): Promise<Array<KvacCoin>> {
+		await ensureKvacWasmInit();
+
 		const proveTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
 		const verifyTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
 
@@ -670,8 +690,9 @@ export class ExtendedCashuWallet extends CashuWallet {
 			keysetId?: string;
 		}
 	): Promise<Array<KvacCoin>> {
-		const keys = await this.getKvacKeys(options?.keysetId);
+		await ensureKvacWasmInit();
 
+		const keys = await this.getKvacKeys(options?.keysetId);
 		// Calculate the fee for the swap
 		const fee = this.getFeesForCoins([decoyInput, balanceCoin]);
 
@@ -714,8 +735,9 @@ export class ExtendedCashuWallet extends CashuWallet {
 			keysetId?: string;
 		}
 	): Promise<Array<KvacCoin>> {
-		const keys = await this.getKvacKeys(options?.keysetId);
+		await ensureKvacWasmInit();
 
+		const keys = await this.getKvacKeys(options?.keysetId);
 		// Calculate the fee for the swap
 		const fee = this.getFeesForCoins([coinToReceive, balanceCoin]);
 
@@ -748,6 +770,7 @@ export class ExtendedCashuWallet extends CashuWallet {
 			counter?: number,
 		}
 	): Promise<[MeltQuoteState, Array<KvacCoin>]> {
+		await ensureKvacWasmInit();
 		const proveTranscript: CashuTranscript = CashuTranscript.wasmCreateNew();
 
 		try {
