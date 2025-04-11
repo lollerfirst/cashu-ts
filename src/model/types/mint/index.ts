@@ -2,6 +2,7 @@ import { SerializedBlindedMessage } from '../wallet';
 
 export * from './responses';
 export * from './keys';
+export * from './kvac/index'
 
 /**
  * Payload that needs to be sent to the mint when checking for spendable proofs

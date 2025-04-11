@@ -3,8 +3,6 @@ import { Proof } from './wallet/index';
 
 export * from './mint/index';
 export * from './wallet/index';
-export * from './mint/kvac/index';
-export * from './wallet/kvac/index';
 
 export type OutputAmounts = {
 	sendAmounts: Array<number>;

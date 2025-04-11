@@ -1,6 +1,8 @@
 import { GroupElement, MAC, ZKP } from 'cashu_kvac';
 import { CheckStateEnum } from '../responses';
 
+export * from './keys';
+
 /**
  * Payload that needs to be sent to the mint when checking for spendable proofs
  */
