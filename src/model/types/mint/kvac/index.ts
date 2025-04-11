@@ -4,7 +4,7 @@ import { CheckStateEnum } from '../responses';
 /**
  * Payload that needs to be sent to the mint when checking for spendable proofs
  */
-export type CheckStatePayload = {
+export type KvacCheckStatePayload = {
 	/**
 	 * The nullifiers of the coins to be checked.
 	 */

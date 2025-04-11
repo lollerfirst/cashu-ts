@@ -1,5 +1,5 @@
 import { GetInfoResponse, MeltQuoteResponse } from './model/types/mint/responses'
-import { MeltQuoteState, MintKeys, MintKeyset } from './model/types/index';
+import { KvacCheckStatePayload, KvacCoinState, MeltQuoteState, MintKeys, MintKeyset } from './model/types/index';
 import { CashuWallet } from './CashuWallet';
 import { ExtendedCashuMint } from './ExtendedCashuMint';
 import { MintKvacKeys, MintKvacKeyset } from './model/types/mint/kvac/keys';
@@ -899,5 +899,37 @@ export class ExtendedCashuWallet extends CashuWallet {
 		} finally {
 			proveTranscript.free();
 		}
+	}
+
+	/**
+	 * Get an array of the states of proofs from the mint (as an array of CheckStateEnum's)
+	 * @param coins kvac coins
+	 * @returns spent state of the requested coins
+	 */
+	async checkKvacCoinsStates(coins: Array<KvacCoin>): Promise<Array<KvacCoinState>> {
+		await ensureKvacWasmInit();
+
+		const nullifiers = coins.map((p: KvacCoin) => RandomizedCoin.wasmFromCoin(p, true).Ca);
+
+		const BATCH_SIZE = 100;
+		const states: Array<KvacCoinState> = [];
+		for (let i = 0; i < nullifiers.length; i += BATCH_SIZE) {
+			const batchSlices = nullifiers.slice(i, i + BATCH_SIZE);
+			const { states: batchStates } = await this.mint.kvacCheck({
+				nullifiers: nullifiers,
+			} as KvacCheckStatePayload);
+			const stateMap: { [n: string]: KvacCoinState } = {};
+			batchStates.forEach((s) => {
+				stateMap[s.nullifier as unknown as string] = s;
+			});
+			for (let j = 0; j < batchSlices.length; j++) {
+				const state = stateMap[batchSlices[j]];
+				if (!state) {
+					throw new Error('Could not find state for kvac coin with nullifier: ' + batchSlices[j]);
+				}
+				states.push(state);
+			}
+		}
+		return states;
 	}
 }
