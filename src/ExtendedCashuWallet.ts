@@ -291,10 +291,11 @@ export class ExtendedCashuWallet extends CashuWallet {
 		const preIssuanceCoins: Array<KvacPreIssuanceCoin> = [];
 		const outputs: Array<KvacCoinOutput> = [];
 
-		for (const amount of amountSplit) {
-			const tagBytes = deriveTag(seed, keyset.id, counter);
-			const amountBlindingFactor = deriveAmountBlindingFactor(seed, keyset.id, counter);
-			const scriptBlindingFactor = deriveScriptBlindingFactor(seed, keyset.id, counter);
+		for (let i=0; i < amountSplit.length; ++i) {
+			const amount = amountSplit[i];
+			const tagBytes = deriveTag(seed, keyset.id, counter+i);
+			const amountBlindingFactor = deriveAmountBlindingFactor(seed, keyset.id, counter+i);
+			const scriptBlindingFactor = deriveScriptBlindingFactor(seed, keyset.id, counter+i);
 
 			const tag: Scalar = Scalar.wasmFromBytesBE(tagBytes);
 			const amountAttr: AmountAttribute = AmountAttribute.wasmCreateNew(
