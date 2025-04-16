@@ -1,5 +1,5 @@
-import { test, describe, expect, it } from 'vitest';
-import {
+import { test, describe, expect, it, beforeAll } from 'vitest';
+import init, {
 	AmountAttribute,
 	BalanceProof,
 	BootstrapProof,
@@ -16,6 +16,10 @@ import {
 } from 'cashu_kvac';
 import { hexToBytes } from '@noble/hashes/utils';
 import { KvacCoin, KvacCoinOutput, KvacPreIssuanceCoin } from '../src/model/types/wallet/kvac';
+import { createRandomPrivateKey } from '@cashu/crypto/modules/common';
+import { ExtendedCashuWallet } from '../src/ExtendedCashuWallet';
+import { ExtendedCashuMint } from '../src/ExtendedCashuMint';
+import { MintKvacKeys } from '../src/model/types';
 
 describe('test kvac wasm library', () => {
 	test('test create scalar', () => {
@@ -240,5 +244,16 @@ describe('test kvac wasm library', () => {
 		);
 
 		console.log(JSON.stringify(scriptAttribute));
+	});
+	test('kvac deterministic outputs', () => {
+		const mintKeys = JSON.parse("{\"id\":\"0091ba5a3f3ff4da\",\"unit\":\"sat\",\"kvac_keys\":{\"Cw\":\"02811c6c8551f526eed51b8a7f7ee9b109a8e420f0b8afe9a7e62c02d130159427\",\"I\":\"031e3b518bb05e09865a4aabc6b4ad650c8e36f008f90853b9dd83dea2494d4579\"}}") as MintKvacKeys;
+
+		const seed = createRandomPrivateKey();
+		const wallet = new ExtendedCashuWallet(new ExtendedCashuMint("http://mock.url"));
+		const outputs = wallet.createKvacDeterministicOutputs([0, 1337], seed, 0, mintKeys);
+		const outputs1 = wallet.createKvacDeterministicOutputs([0, 2098], seed, 2, mintKeys);
+
+		console.log(`outputs = ${JSON.stringify(outputs, null, 2)}`);
+		console.log(`outputs1 = ${JSON.stringify(outputs1, null, 2)}`);
 	});
 });
