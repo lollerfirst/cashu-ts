@@ -353,7 +353,7 @@ class CashuWallet {
 		) {
 			// we need to swap
 			// input selection, needs fees because of the swap
-			const { keep: keepProofsSelect, send: sendProofs } = this.selectProofsToSendV2(
+			const { keep: keepProofsSelect, send: sendProofs } = this.selectProofsToSend(
 				proofs,
 				amount,
 				true
@@ -460,11 +460,11 @@ class CashuWallet {
 		}
 
 		/**
-			 * SumState.
-			 * Maps a `sendValue` to a inclusion flag that indicates whether the current coin
-			 * has to be included in the solution
-			 * NOTE: The absence of a map means "There is no solution for this sendValue"
-			 */
+		 * SumState.
+		 * Maps a `sendValue` to a inclusion flag that indicates whether the current coin
+		 * has to be included in the solution
+		 * NOTE: The absence of a map means "There is no solution for this sendValue"
+		 */
 		type SumState = {
 			[key: number]: boolean;
 		};
@@ -493,6 +493,7 @@ class CashuWallet {
 				}
 
 				const cumulativeSum = sumSeries[i];
+				// Decide where to stop
 				const stop = Math.min(toAmount, cumulativeSum);
 				let currentAmount = fromAmount;
 				
