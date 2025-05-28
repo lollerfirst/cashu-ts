@@ -353,7 +353,7 @@ class CashuWallet {
 		) {
 			// we need to swap
 			// input selection, needs fees because of the swap
-			const { keep: keepProofsSelect, send: sendProofs } = this.selectProofsToSend(
+			const { keep: keepProofsSelect, send: sendProofs } = this.selectProofsToSendV2(
 				proofs,
 				amount,
 				true
@@ -456,7 +456,7 @@ class CashuWallet {
 		}
 
 		if (sumSeries[n-1] < amountToSend) {
-			throw new Error("Not enough proofs to cover this amount");
+			throw new Error("Not enough balance to cover this amount");
 		}
 
 		/**
@@ -522,8 +522,7 @@ class CashuWallet {
 				}
 			}
 
-			console.log(`iterations for amount ${toAmount}: ${iterations}`);
-			//console.log(`hashtables: ${JSON.stringify(hashtables, null, 2)}`);
+			console.debug(`iterations for amount ${toAmount}: ${iterations}`);
 			// No solution
 			if (!(toAmount in hashtables[n-1])) {
 				return [];
@@ -556,20 +555,24 @@ class CashuWallet {
 		if (includeFees) {
 			let currentFees = currentAmount - amountToSend;
 			let expectedFees = this.getFeesForProofs(selectedProofs);
-			console.log(`expected fees: ${expectedFees}\ncurrent fees: ${currentFees}`);
+			console.debug(`expected fees: ${expectedFees}\ncurrent fees: ${currentFees}`);
 			let i = 0;
 			while (currentFees < expectedFees) {
 				++i;
-				console.log(`include fees iteration: ${i}`);
+				console.debug(`include fees iteration: ${i}`);
 				currentAmount += 1;
+				// Check that the current target amount does not exceed the provided balance
+				if (currentAmount > sumSeries[n-1]) {
+					throw new Error("Not enough balance to cover this amount");
+				}
 				selectedProofs = computeTable(currentAmount, currentAmount);
-				while (selectedProofs.length === 0) {
-					currentAmount += 1;
-					selectedProofs = computeTable(currentAmount, currentAmount);
+				// Check that there exist a solution for `currentAmount`
+				if (selectedProofs.length === 0) {
+					continue;
 				}
 				currentFees = currentAmount - amountToSend;
 				expectedFees = this.getFeesForProofs(selectedProofs);
-				console.log(`expected fees: ${expectedFees}\ncurrent fees:${currentFees}`);
+				console.debug(`expected fees: ${expectedFees}\ncurrent fees:${currentFees}`);
 			}
 		}
 
