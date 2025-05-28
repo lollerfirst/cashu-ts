@@ -45,6 +45,7 @@ export type ReceiveOptions = {
  *   - `privkey` (string): Create a signature for the output secrets if provided.
  *   - `keysetId` (string): Override the keyset ID derived from the current mint keys with a custom one. The keyset ID should be fetched from the `/keysets` endpoint.
  *   - `offline` (boolean): Send proofs offline, if enabled.
+ * 	 - `optimalCoinselect` (boolean): Do coin-selection with a sub-set sum algorithm
  *   - `includeFees` (boolean): Include fees in the response, if enabled.
  *   - `includeDleq` (boolean): Include DLEQ proofs in the proofs to be sent, if enabled.
  */
@@ -56,6 +57,7 @@ export type SendOptions = {
 	privkey?: string;
 	keysetId?: string;
 	offline?: boolean;
+	optimalCoinselect?: boolean;
 	includeFees?: boolean;
 	includeDleq?: boolean;
 	outputData?: {

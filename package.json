@@ -8,7 +8,7 @@
 	"types": "lib/types/index.d.ts",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/cashubtc/cashu-ts"
+		"url": "git+https://github.com/lollerfirst/cashu-ts"
 	},
 	"bugs": {
 		"url": "https://github.com/cashubtc/cashu-ts/issues"
