@@ -1188,7 +1188,7 @@ describe('Test coinselection with subset-sum', () => {
 		console.time("selectProofs-v1");
 		const selected1 = wallet.selectProofsToSend(proofs, amountToSend);
 		console.timeEnd("selectProofs-v1");
-		console.log(`selected.length = ${selected.send.length}\nselected1.length = ${selected1.send.length}`)
+		console.log(`selected.length = ${selected.send.length}\nselected1.length = ${selected1.send.length}`);
 	});
 });
 
