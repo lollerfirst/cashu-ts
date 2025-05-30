@@ -1067,7 +1067,7 @@ describe('Test coinselection', () => {
 });
 
 describe('Test coinselection with subset-sum', () => {
-	const proofs1 = [
+	const notes = [
 		{
 			id: '009a1f293253e41e',
 			amount: 2,
@@ -1107,10 +1107,9 @@ describe('Test coinselection with subset-sum', () => {
 	];
 
 	test('optimal offline coinselection', async () => {
-		let proofs = proofs1;
 		const wallet = new CashuWallet(mint, { unit });
 		const targetAmount = 25;
-		const { send } = await wallet.send(targetAmount, proofs, {
+		const { send } = await wallet.send(targetAmount, notes, {
 			offline: true,
 			optimalCoinselect: true
 		});
@@ -1119,10 +1118,9 @@ describe('Test coinselection with subset-sum', () => {
 		expect(amountSend).toBe(25);
 	});
 	test('next optimal offline coinselection', async () => {
-		let proofs = proofs1;
 		const wallet = new CashuWallet(mint, { unit });
 		const targetAmount = 23;
-		const { send } = await wallet.send(targetAmount, proofs, {
+		const { send } = await wallet.send(targetAmount, notes, {
 			offline: true,
 			optimalCoinselect: true
 		});
@@ -1146,22 +1144,21 @@ describe('Test coinselection with subset-sum', () => {
 				});
 			})
 		);
-		const proofs = proofs1;
 		const mint = new CashuMint(mintUrl);
 		const keysets = await mint.getKeySets();
 		const wallet = new CashuWallet(mint, { unit, keysets: keysets.keysets });
 		const targetAmount = 31;
-		const { send } = await wallet.send(targetAmount, proofs, {
+		const { send } = await wallet.send(targetAmount, notes, {
 			offline: true,
 			optimalCoinselect: true,
 			includeFees: true,
 		});
-		expect(send).toHaveLength(4);
+		expect(send).toHaveLength(3);
 		const amountSend = send.reduce((acc, p) => acc + p.amount, 0);
 		// fee ppk is 1000:
 		// * 2 proofs (optimal) would have had fee = 2
 		// * next optimal solution is 4 proofs with fee 4.
-		expect(amountSend).toBe(35);
+		expect(amountSend).toBe(34);
 	});
 	test('optimal offline coinselection with huge proofsets', async() => {		
 		let proofs: Array<Proof> = [];

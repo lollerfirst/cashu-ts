@@ -500,22 +500,22 @@ class CashuWallet {
 				for (; currentAmount <= stop; ++currentAmount) {
 					iterations++;
 
-					// If the amount of a single proof exceeds the currentAmount
-					// we are sure it cannot be included
+					// If the amount of a single proof does not exceed the currentAmount
+					// then check if a solution exist when we include it.
 					if (p.amount <= currentAmount) {
-						// What happens if we include it?
 						const remainingAmount = currentAmount - p.amount;
 						if (remainingAmount === 0) {
 							// ACCEPTABLE. Create state.
 							hashtables[i][currentAmount] = true;
+							continue;
 						} else if (i > 0 && remainingAmount > 0 && remainingAmount in hashtables[i - 1]) {
 							// ACCEPTABLE. Create state.
 							hashtables[i][currentAmount] = true;
+							continue;
 						}
 					}
 
 					// Check if a solution exists when we don't include it.
-					// We prefer this solution, since it amounts to one less proof.
 					if (i > 0 && currentAmount in hashtables[i-1]) {
 						// ACCEPTABLE. Create state.
 						hashtables[i][currentAmount] = false;
@@ -567,13 +567,14 @@ class CashuWallet {
 					throw new Error("Not enough balance to cover this amount");
 				}
 				selectedProofs = computeTable(currentAmount, currentAmount);
+				console.debug(`selectedProofs: ${JSON.stringify(selectedProofs)}`)
 				// Check that there exist a solution for `currentAmount`
 				if (selectedProofs.length === 0) {
 					continue;
 				}
 				currentFees = currentAmount - amountToSend;
 				expectedFees = this.getFeesForProofs(selectedProofs);
-				console.debug(`expected fees: ${expectedFees}\ncurrent fees:${currentFees}`);
+				console.debug(`expected fees: ${expectedFees}\ncurrent fees: ${currentFees}`);
 			}
 		}
 
