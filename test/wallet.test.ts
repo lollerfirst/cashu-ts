@@ -1105,7 +1105,6 @@ describe('Test coinselection with subset-sum', () => {
 			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
 		}
 	];
-
 	test('optimal offline coinselection', async () => {
 		const wallet = new CashuWallet(mint, { unit });
 		const targetAmount = 25;
@@ -1160,7 +1159,7 @@ describe('Test coinselection with subset-sum', () => {
 		// * next optimal solution is 4 proofs with fee 4.
 		expect(amountSend).toBe(34);
 	});
-	test('optimal offline coinselection with huge proofsets', async() => {		
+	test('optimal offline coinselection vs coinselection with huge proofsets', async() => {		
 		let proofs: Array<Proof> = [];
 		for (let i=0; i<100; ++i) {
 			const bytes = randomBytes(1);
@@ -1181,9 +1180,13 @@ describe('Test coinselection with subset-sum', () => {
 		
 		console.time("selectProofs");
 		const wallet = new CashuWallet(mint, {unit: 'sat'});
+		const amountToSend = Math.floor(Math.random() * totalAmount / 2 + totalAmount / 2)
 		// We try and select the more hostile amounts: more than half of the total.
-		wallet.selectProofsToSendV2(proofs, Math.floor(Math.random() * totalAmount / 2 + totalAmount / 2));
+		const selected = wallet.selectProofsToSendV2(proofs, amountToSend);
 		console.timeEnd("selectProofs");
+		const selected1 = wallet.selectProofsToSend(proofs, amountToSend);
+
+		console.log(`selected.length = ${selected.send.length}\nselected1.length = ${selected1.send.length}`)
 	});
 });
 
