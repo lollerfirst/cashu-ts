@@ -19,7 +19,7 @@ import { MintInfo } from '../src/model/MintInfo.js';
 import * as fs from 'fs';
 import { OutputData } from '../src/model/OutputData.js';
 import { hexToBytes } from '@noble/curves/abstract/utils';
-import { bytesToHex } from '@noble/hashes/utils';
+import { randomBytes } from '@noble/hashes/utils';
 
 injectWebSocketImpl(WebSocket);
 
@@ -373,44 +373,6 @@ describe('send', () => {
 			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
 		}
 	];
-	const proofs1 = [
-		{
-			id: '009a1f293253e41e',
-			amount: 2,
-			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
-			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
-		},
-		{
-			id: '009a1f293253e41e',
-			amount: 8,
-			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
-			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
-		},
-		{
-			id: '009a1f293253e41e',
-			amount: 16,
-			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
-			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
-		},
-		{
-			id: '009a1f293253e41e',
-			amount: 16,
-			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
-			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
-		},
-		{
-			id: '009a1f293253e41e',
-			amount: 1,
-			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
-			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
-		},
-		{
-			id: '009a1f293253e41e',
-			amount: 1,
-			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
-			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
-		}
-	];
 	test('test send base case', async () => {
 		server.use(
 			http.post(mintUrl + '/v1/swap', () => {
@@ -714,101 +676,6 @@ describe('send', () => {
 			.catch((e) => e);
 
 		expect(result).toEqual(new Error('bad response'));
-	});
-	test('optimal offline coinselection', async () => {
-		let proofs = proofs1;
-		const wallet = new CashuWallet(mint, { unit });
-		const targetAmount = 25;
-		const { send } = await wallet.send(targetAmount, proofs, {
-			offline: true,
-			optimalCoinselect: true
-		});
-		expect(send).toHaveLength(3);
-		const amountSend = send.reduce((acc, p) => acc + p.amount, 0);
-		expect(amountSend).toBe(25);
-	});
-	test('next optimal offline coinselection', async () => {
-		let proofs = proofs1;
-		const wallet = new CashuWallet(mint, { unit });
-		const targetAmount = 23;
-		const { send } = await wallet.send(targetAmount, proofs, {
-			offline: true,
-			optimalCoinselect: true
-		});
-		expect(send).toHaveLength(2);
-		const amountSend = send.reduce((acc, p) => acc + p.amount, 0);
-		expect(amountSend).toBe(24);
-	});
-	
-	test('optimal offline coinselection with input fees', async () => {
-		server.use(
-			http.get(mintUrl + '/v1/keysets', () => {
-				return HttpResponse.json({
-					keysets: [
-						{
-							id: '009a1f293253e41e',
-							unit: 'sat',
-							active: true,
-							input_fee_ppk: 1000
-						}
-					]
-				});
-			})
-		);
-		const proofs = proofs1;
-		const mint = new CashuMint(mintUrl);
-		const keysets = await mint.getKeySets();
-		const wallet = new CashuWallet(mint, { unit, keysets: keysets.keysets });
-		const targetAmount = 31;
-		const { send } = await wallet.send(targetAmount, proofs, {
-			offline: true,
-			optimalCoinselect: true,
-			includeFees: true,
-		});
-		expect(send).toHaveLength(4);
-		const amountSend = send.reduce((acc, p) => acc + p.amount, 0);
-		// fee ppk is 1000:
-		// * 2 proofs (optimal) would have had fee = 2
-		// * next optimal solution is 4 proofs with fee 4.
-		expect(amountSend).toBe(35);
-	});
-	test('optimal offline coinselection with huge proofsets', async() => {
-		function getRandomBytes(size: number): Promise<Buffer> {
-			return new Promise((resolve, reject) => {
-				const fd = fs.openSync('/dev/urandom', 'r');
-				const buffer = Buffer.alloc(size);
-				fs.read(fd, buffer, 0, size, null, (err, bytesRead) => {
-					fs.closeSync(fd);
-					if (err) {
-						reject(err);
-					} else {
-						resolve(buffer);
-					}
-				});
-			});
-		}
-		
-		let proofs = [];
-		for (let i=0; i<90; ++i) {
-			const n = await getRandomBytes(1);
-			const amount = 1 << (n[0] % 19);
-			const proof = {
-				id: '009a1f293253e41e',
-				amount: amount,
-				secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
-				C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
-			};
-			proofs.push(proof);
-		}
-		
-		const totalAmount = proofs.reduce((acc, p) => p.amount + acc, 0);
-		
-		console.log(`totalAmount: ${totalAmount}`);
-		
-		console.time("selectProofs");
-		const wallet = new CashuWallet(mint, {unit: 'sat'});
-		wallet.selectProofsToSendV2(proofs, Math.floor(Math.random() * totalAmount / 2 + totalAmount / 2));
-		console.timeEnd("selectProofs");
 	});
 });
 
@@ -1196,6 +1063,130 @@ describe('Test coinselection', () => {
 		// * 2 proofs (optimal) would have had fee = 2
 		// * next optimal solution is 3 proofs with fee 3.
 		expect(amountSend).toBe(34);
+	});
+});
+
+describe('Test coinselection with subset-sum', () => {
+	const proofs1 = [
+		{
+			id: '009a1f293253e41e',
+			amount: 2,
+			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
+			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
+		},
+		{
+			id: '009a1f293253e41e',
+			amount: 8,
+			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
+			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
+		},
+		{
+			id: '009a1f293253e41e',
+			amount: 16,
+			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
+			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
+		},
+		{
+			id: '009a1f293253e41e',
+			amount: 16,
+			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
+			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
+		},
+		{
+			id: '009a1f293253e41e',
+			amount: 1,
+			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
+			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
+		},
+		{
+			id: '009a1f293253e41e',
+			amount: 1,
+			secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
+			C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
+		}
+	];
+
+	test('optimal offline coinselection', async () => {
+		let proofs = proofs1;
+		const wallet = new CashuWallet(mint, { unit });
+		const targetAmount = 25;
+		const { send } = await wallet.send(targetAmount, proofs, {
+			offline: true,
+			optimalCoinselect: true
+		});
+		expect(send).toHaveLength(3);
+		const amountSend = send.reduce((acc, p) => acc + p.amount, 0);
+		expect(amountSend).toBe(25);
+	});
+	test('next optimal offline coinselection', async () => {
+		let proofs = proofs1;
+		const wallet = new CashuWallet(mint, { unit });
+		const targetAmount = 23;
+		const { send } = await wallet.send(targetAmount, proofs, {
+			offline: true,
+			optimalCoinselect: true
+		});
+		expect(send).toHaveLength(2);
+		const amountSend = send.reduce((acc, p) => acc + p.amount, 0);
+		expect(amountSend).toBe(24);
+	});
+	
+	test('optimal offline coinselection with input fees', async () => {
+		server.use(
+			http.get(mintUrl + '/v1/keysets', () => {
+				return HttpResponse.json({
+					keysets: [
+						{
+							id: '009a1f293253e41e',
+							unit: 'sat',
+							active: true,
+							input_fee_ppk: 1000
+						}
+					]
+				});
+			})
+		);
+		const proofs = proofs1;
+		const mint = new CashuMint(mintUrl);
+		const keysets = await mint.getKeySets();
+		const wallet = new CashuWallet(mint, { unit, keysets: keysets.keysets });
+		const targetAmount = 31;
+		const { send } = await wallet.send(targetAmount, proofs, {
+			offline: true,
+			optimalCoinselect: true,
+			includeFees: true,
+		});
+		expect(send).toHaveLength(4);
+		const amountSend = send.reduce((acc, p) => acc + p.amount, 0);
+		// fee ppk is 1000:
+		// * 2 proofs (optimal) would have had fee = 2
+		// * next optimal solution is 4 proofs with fee 4.
+		expect(amountSend).toBe(35);
+	});
+	test('optimal offline coinselection with huge proofsets', async() => {		
+		let proofs: Array<Proof> = [];
+		for (let i=0; i<100; ++i) {
+			const bytes = randomBytes(1);
+			const amount = 1 << (bytes[0] % 19);
+			const proof = {
+				id: '009a1f293253e41e',
+				amount: amount,
+				secret: '1f98e6837a434644c9411825d7c6d6e13974b931f8f0652217cea29010674a13',
+				C: '034268c0bd30b945adf578aca2dc0d1e26ef089869aaf9a08ba3a6da40fda1d8be'
+			};
+			proofs.push(proof);
+		}
+		
+		const totalAmount = proofs.reduce((acc, p) => p.amount + acc, 0);
+		
+		console.log(`totalAmount: ${totalAmount}`);
+		console.log(`N Proofs: 100`)
+		
+		console.time("selectProofs");
+		const wallet = new CashuWallet(mint, {unit: 'sat'});
+		// We try and select the more hostile amounts: more than half of the total.
+		wallet.selectProofsToSendV2(proofs, Math.floor(Math.random() * totalAmount / 2 + totalAmount / 2));
+		console.timeEnd("selectProofs");
 	});
 });
 
