@@ -1176,16 +1176,18 @@ describe('Test coinselection with subset-sum', () => {
 		const totalAmount = proofs.reduce((acc, p) => p.amount + acc, 0);
 		
 		console.log(`totalAmount: ${totalAmount}`);
-		console.log(`N Proofs: 100`)
-		
-		console.time("selectProofs");
+		console.log(`N Proofs: 100`);
+
 		const wallet = new CashuWallet(mint, {unit: 'sat'});
 		const amountToSend = Math.floor(Math.random() * totalAmount / 2 + totalAmount / 2)
+		
+		console.time("selectProofs-v2");
 		// We try and select the more hostile amounts: more than half of the total.
 		const selected = wallet.selectProofsToSendV2(proofs, amountToSend);
-		console.timeEnd("selectProofs");
+		console.timeEnd("selectProofs-v2");
+		console.time("selectProofs-v1");
 		const selected1 = wallet.selectProofsToSend(proofs, amountToSend);
-
+		console.timeEnd("selectProofs-v1");
 		console.log(`selected.length = ${selected.send.length}\nselected1.length = ${selected1.send.length}`)
 	});
 });
