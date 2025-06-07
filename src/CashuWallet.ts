@@ -341,6 +341,7 @@ class CashuWallet {
 		const { keep: keepProofsOffline, send: sendProofOffline } = !optimalCoinselect
 			? this.selectProofsToSend(proofs, amount, options?.includeFees)
 			: this.selectProofsToSendV2(proofs, amount, options?.includeFees);
+		console.debug(`sendProofs: ${JSON.stringify(sendProofOffline)}`);
 		const expectedFee = includeFees ? this.getFeesForProofs(sendProofOffline) : 0;
 		if (
 			!offline &&
@@ -386,7 +387,7 @@ class CashuWallet {
 	selectProofsToSend(
 		proofs: Array<Proof>,
 		amountToSend: number,
-		includeFees?: boolean
+		includeFees?: boolean,
 	): SendResponse {
 		const sortedProofs = proofs.sort((a: Proof, b: Proof) => a.amount - b.amount);
 		const smallerProofs = sortedProofs
@@ -395,6 +396,10 @@ class CashuWallet {
 		const biggerProofs = sortedProofs
 			.filter((p: Proof) => p.amount > amountToSend)
 			.sort((a: Proof, b: Proof) => a.amount - b.amount);
+
+		console.debug(`smallerProofs: ${smallerProofs.map(p => p.amount)}`);
+		console.debug(`biggerProofs: ${biggerProofs.map(p => p.amount)}\n`);
+
 		const nextBigger = biggerProofs[0];
 		if (!smallerProofs.length && nextBigger) {
 			return {
@@ -426,6 +431,8 @@ class CashuWallet {
 		if (sumProofs(selectedProofs) < amountToSend + selectedFeePPK && nextBigger) {
 			selectedProofs = [nextBigger];
 		}
+
+		console.debug(`selectedProofs at backtracing step: ${selectedProofs.map(p => p.amount)}`);
 
 		return {
 			keep: proofs.filter((p: Proof) => !selectedProofs.includes(p)),

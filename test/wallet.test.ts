@@ -1031,7 +1031,7 @@ describe('Test coinselection', () => {
 		console.log(`amountSend = ${amountSend}`);
 		expect(amountSend).toBe(24);
 	});
-	test('offline coinselection with large input fees', async () => {
+	test('offline coinselection with input fee 1000 ppk', async () => {
 		server.use(
 			http.get(mintUrl + '/v1/keysets', () => {
 				return HttpResponse.json({
@@ -1063,6 +1063,36 @@ describe('Test coinselection', () => {
 		// * 2 proofs (optimal) would have had fee = 2
 		// * next optimal solution is 3 proofs with fee 3.
 		expect(amountSend).toBe(34);
+	});
+	test('offline coinselection with input fee 600 ppk', async () => {
+		server.use(
+			http.get(mintUrl + '/v1/keysets', () => {
+				return HttpResponse.json({
+					keysets: [
+						{
+							id: '009a1f293253e41e',
+							unit: 'sat',
+							active: true,
+							input_fee_ppk: 600
+						}
+					]
+				});
+			})
+		);
+		const mint = new CashuMint(mintUrl);
+		const keysets = await mint.getKeySets();
+		const wallet = new CashuWallet(mint, { unit, keysets: keysets.keysets });
+		const targetAmount = 31;
+		const { send } = await wallet.send(targetAmount, notes, {
+			offline: true,
+			includeFees: true
+		});
+		const amountSend = send.reduce((acc, p) => acc + p.amount, 0);
+
+		console.log(`send.length = ${send.length}`);
+		console.log(`amountSend = ${amountSend}`);
+		expect(send).toHaveLength(3);
+		expect(amountSend).toBe(33);
 	});
 });
 
@@ -1128,7 +1158,7 @@ describe('Test coinselection with subset-sum', () => {
 		expect(amountSend).toBe(24);
 	});
 	
-	test('optimal offline coinselection with input fees', async () => {
+	test('optimal offline coinselection with 1000 ppk input fees', async () => {
 		server.use(
 			http.get(mintUrl + '/v1/keysets', () => {
 				return HttpResponse.json({
@@ -1158,6 +1188,34 @@ describe('Test coinselection with subset-sum', () => {
 		// * 2 proofs (optimal) would have had fee = 2
 		// * next optimal solution is 4 proofs with fee 4.
 		expect(amountSend).toBe(34);
+	});
+	test('optimal offline coinselection with 600 ppk input fees', async () => {
+		server.use(
+			http.get(mintUrl + '/v1/keysets', () => {
+				return HttpResponse.json({
+					keysets: [
+						{
+							id: '009a1f293253e41e',
+							unit: 'sat',
+							active: true,
+							input_fee_ppk: 600
+						}
+					]
+				});
+			})
+		);
+		const mint = new CashuMint(mintUrl);
+		const keysets = await mint.getKeySets();
+		const wallet = new CashuWallet(mint, { unit, keysets: keysets.keysets });
+		const targetAmount = 31;
+		const { send } = await wallet.send(targetAmount, notes, {
+			offline: true,
+			optimalCoinselect: true,
+			includeFees: true,
+		});
+		expect(send).toHaveLength(3);
+		const amountSend = send.reduce((acc, p) => acc + p.amount, 0);
+		expect(amountSend).toBe(33);
 	});
 	test('optimal offline coinselection vs coinselection with huge proofsets', async() => {		
 		let proofs: Array<Proof> = [];
