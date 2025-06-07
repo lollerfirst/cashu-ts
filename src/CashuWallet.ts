@@ -463,20 +463,16 @@ class CashuWallet {
 		includeFees?: boolean
 	): SendResponse {
 		// Sort proofs by amount for easier processing
-		let sortedProofs = [...proofs].sort((a: Proof, b: Proof) => a.amount - b.amount);
+		const sortedProofs = [...proofs].sort((a: Proof, b: Proof) => a.amount - b.amount);
 
 		const n = sortedProofs.length;
 
 		// Precompute sum series and reverse sum series
 		const sumSeries: Array<number> = [];
-		const reverseSumSeries: Array<number> = [];
 		let cumulativeSum = 0;
-		let cumulativeReverseSum = 0;
 		for (let i = 0; i < n; ++i) {
 			cumulativeSum += sortedProofs[i].amount;
 			sumSeries.push(cumulativeSum);
-			reverseSumSeries.push(cumulativeReverseSum);
-			cumulativeReverseSum += sortedProofs[n - 1 - i].amount;
 		}
 
 		// Check if the total available balance is less than the amount to send
@@ -493,7 +489,12 @@ class CashuWallet {
 		type SumState = {
 			[key: number]: boolean;
 		};
-		const hashtables: Array<SumState> = new Array(n).fill({});
+		const hashtables: Array<SumState> = new Array(n);
+		
+		// Initialize each element of the hashtables array
+		for (let i = 0; i < n; i++) {
+			hashtables[i] = {}; // Initialize as an empty object
+		}
 
 		/**
 		 * Computes the table of possible sums using dynamic programming.
