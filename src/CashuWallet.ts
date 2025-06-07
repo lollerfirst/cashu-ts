@@ -397,9 +397,6 @@ class CashuWallet {
 			.filter((p: Proof) => p.amount > amountToSend)
 			.sort((a: Proof, b: Proof) => a.amount - b.amount);
 
-		console.debug(`smallerProofs: ${smallerProofs.map(p => p.amount)}`);
-		console.debug(`biggerProofs: ${biggerProofs.map(p => p.amount)}\n`);
-
 		const nextBigger = biggerProofs[0];
 		if (!smallerProofs.length && nextBigger) {
 			return {
@@ -431,8 +428,6 @@ class CashuWallet {
 		if (sumProofs(selectedProofs) < amountToSend + selectedFeePPK && nextBigger) {
 			selectedProofs = [nextBigger];
 		}
-
-		console.debug(`selectedProofs at backtracing step: ${selectedProofs.map(p => p.amount)}`);
 
 		return {
 			keep: proofs.filter((p: Proof) => !selectedProofs.includes(p)),
@@ -503,9 +498,7 @@ class CashuWallet {
 		 * @returns An array of proofs that sum up to the target amount.
 		 */
 		function computeTable(fromAmount: number, toAmount: number): Array<Proof> {
-			console.log(`### computeTable from ${fromAmount} to ${toAmount}.`);
-
-			let iterations = 1;
+			//console.log(`### computeTable from ${fromAmount} to ${toAmount}.`);
 
 			for (let i = 0; i < n; ++i) {
 				const p = sortedProofs[i];
@@ -522,8 +515,6 @@ class CashuWallet {
 				let currentAmount = fromAmount;
 
 				for (; currentAmount <= stop; ++currentAmount) {
-					iterations++;
-
 					// Check if including the current proof can achieve the current amount
 					if (p.amount <= currentAmount) {
 						const remainingAmount = currentAmount - p.amount;
@@ -540,7 +531,7 @@ class CashuWallet {
 				}
 			}
 
-			console.debug(`iterations for amount ${toAmount}: ${iterations}`);
+			//console.debug(`iterations for amount ${toAmount}: ${iterations}`);
 			if (!(toAmount in hashtables[n - 1])) {
 				return [];
 			}
@@ -572,7 +563,7 @@ class CashuWallet {
 		if (includeFees) {
 			let currentFees = currentAmount - amountToSend;
 			let expectedFees = this.getFeesForProofs(selectedProofs);
-			console.debug(`expected fees: ${expectedFees}\ncurrent fees: ${currentFees}`);
+			//console.debug(`expected fees: ${expectedFees}\ncurrent fees: ${currentFees}`);
 			let i = 0;
 			while (currentFees < expectedFees) {
 				++i;
@@ -582,13 +573,13 @@ class CashuWallet {
 					throw new Error("Not enough balance to cover this amount");
 				}
 				selectedProofs = computeTable(currentAmount, currentAmount);
-				console.debug(`selectedProofs: ${JSON.stringify(selectedProofs)}`);
+				//console.debug(`selectedProofs: ${JSON.stringify(selectedProofs)}`);
 				if (selectedProofs.length === 0) {
 					continue;
 				}
 				currentFees = currentAmount - amountToSend;
 				expectedFees = this.getFeesForProofs(selectedProofs);
-				console.debug(`expected fees: ${expectedFees}\ncurrent fees: ${currentFees}`);
+				//console.debug(`expected fees: ${expectedFees}\ncurrent fees: ${currentFees}`);
 			}
 		}
 
