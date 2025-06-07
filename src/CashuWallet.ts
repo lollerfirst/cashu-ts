@@ -440,105 +440,113 @@ class CashuWallet {
 		};
 	}
 
+	/**
+	 * Selects proofs to send using a dynamic programming approach.
+	 * This method uses a variation of the subset-sum problem to find the optimal set of proofs
+	 * that sum up to the desired amount. It employs a dynamic programming table to track possible sums.
+	 * 
+	 * Instead of using a classical 2D table, we use an Array<SumState> to save space, where each SumState
+	 * is a map that tracks whether a particular sum can be achieved with the current set of proofs.
+	 * 
+	 * The sum series and reverse sum series are precomputed to quickly exclude unreachable states.
+	 * The sum series helps in determining the maximum sum achievable with the first i proofs, while
+	 * the reverse sum series helps in determining the maximum sum achievable with the last i proofs.
+	 * 
+	 * @param proofs Array of proofs to consider for sending.
+	 * @param amountToSend The target amount to send.
+	 * @param includeFees Whether to include fees in the calculation.
+	 * @returns An object containing proofs to keep and proofs to send.
+	 */
 	selectProofsToSendV2(
 		proofs: Array<Proof>,
 		amountToSend: number,
 		includeFees?: boolean
 	): SendResponse {
-		let sortedProofs = [...proofs];
-		sortedProofs = sortedProofs.sort((a: Proof, b: Proof) => a.amount - b.amount);
+		// Sort proofs by amount for easier processing
+		let sortedProofs = [...proofs].sort((a: Proof, b: Proof) => a.amount - b.amount);
 
 		const n = sortedProofs.length;
 
-		// Calculate sum series
+		// Precompute sum series and reverse sum series
 		const sumSeries: Array<number> = [];
 		const reverseSumSeries: Array<number> = [];
 		let cumulativeSum = 0;
 		let cumulativeReverseSum = 0;
-		for (let i=0; i<n; ++i) {
+		for (let i = 0; i < n; ++i) {
 			cumulativeSum += sortedProofs[i].amount;
 			sumSeries.push(cumulativeSum);
 			reverseSumSeries.push(cumulativeReverseSum);
-			cumulativeReverseSum += sortedProofs[n-1-i].amount;
+			cumulativeReverseSum += sortedProofs[n - 1 - i].amount;
 		}
 
-		if (sumSeries[n-1] < amountToSend) {
+		// Check if the total available balance is less than the amount to send
+		if (sumSeries[n - 1] < amountToSend) {
 			throw new Error("Not enough balance to cover this amount");
 		}
 
 		/**
 		 * SumState.
-		 * Maps a `sendValue` to a inclusion flag that indicates whether the current coin
-		 * has to be included in the solution
-		 * NOTE: The absence of a map means "There is no solution for this sendValue"
+		 * Maps a `sendValue` to an inclusion flag that indicates whether the current coin
+		 * has to be included in the solution.
+		 * NOTE: The absence of a map means "There is no solution for this sendValue".
 		 */
 		type SumState = {
 			[key: number]: boolean;
 		};
-		const hashtables: Array<SumState> = new Array(n);
+		const hashtables: Array<SumState> = new Array(n).fill({});
 
-		// Initialize each element of the hashtables array
-		for (let i = 0; i < n; i++) {
-			hashtables[i] = {}; // Initialize as an empty object
-		}
-
+		/**
+		 * Computes the table of possible sums using dynamic programming.
+		 * @param fromAmount The starting amount for the computation.
+		 * @param toAmount The target amount for the computation.
+		 * @returns An array of proofs that sum up to the target amount.
+		 */
 		function computeTable(fromAmount: number, toAmount: number): Array<Proof> {
 			console.log(`### computeTable from ${fromAmount} to ${toAmount}.`);
 
-			// Start compiling the sub-set sum table
 			let iterations = 1;
-			
-			for (let i = 0; i<n; ++i) {
+
+			for (let i = 0; i < n; ++i) {
 				const p = sortedProofs[i];
 
-				if (p.amount > toAmount) {
-					if (i>0) {
-						for (const key in hashtables[i-1]) {
-							hashtables[i][key] = false;
-						}
+				// If the proof amount is greater than the target amount, carry forward previous states
+				if (p.amount > toAmount && i > 0) {
+					for (const key in hashtables[i - 1]) {
+						hashtables[i][key] = false;
 					}
 				}
 
 				const cumulativeSum = sumSeries[i];
-				// Decide where to stop
 				const stop = Math.min(toAmount, cumulativeSum);
 				let currentAmount = fromAmount;
-				
+
 				for (; currentAmount <= stop; ++currentAmount) {
 					iterations++;
 
-					// If the amount of a single proof does not exceed the currentAmount
-					// then check if a solution exist when we include it.
+					// Check if including the current proof can achieve the current amount
 					if (p.amount <= currentAmount) {
 						const remainingAmount = currentAmount - p.amount;
-						if (remainingAmount === 0) {
-							// ACCEPTABLE. Create state.
-							hashtables[i][currentAmount] = true;
-							continue;
-						} else if (i > 0 && remainingAmount > 0 && remainingAmount in hashtables[i - 1]) {
-							// ACCEPTABLE. Create state.
+						if (remainingAmount === 0 || (i > 0 && remainingAmount in hashtables[i - 1])) {
 							hashtables[i][currentAmount] = true;
 							continue;
 						}
 					}
 
-					// Check if a solution exists when we don't include it.
-					if (i > 0 && currentAmount in hashtables[i-1]) {
-						// ACCEPTABLE. Create state.
+					// Check if the current amount can be achieved without including the current proof
+					if (i > 0 && currentAmount in hashtables[i - 1]) {
 						hashtables[i][currentAmount] = false;
 					}
 				}
 			}
 
 			console.debug(`iterations for amount ${toAmount}: ${iterations}`);
-			// No solution
-			if (!(toAmount in hashtables[n-1])) {
+			if (!(toAmount in hashtables[n - 1])) {
 				return [];
 			}
 
-			// Extract Subset Proofs
+			// Backtrack to find the subset of proofs that sum up to the target amount
 			const subSetProofs: Array<Proof> = [];
-			let i = n-1;
+			let i = n - 1;
 			while (i >= 0 && toAmount > 0) {
 				if (hashtables[i][toAmount] === true) {
 					subSetProofs.push(sortedProofs[i]);
@@ -549,17 +557,17 @@ class CashuWallet {
 			return subSetProofs;
 		}
 
-		// Create Table Up to `amountToSend`
+		// Attempt to find a solution for the exact amount to send
 		let currentAmount = amountToSend;
 		let selectedProofs: Array<Proof> = computeTable(1, currentAmount);
 
-		// No solution for given amount, let's try a bigger one
+		// If no solution is found, increment the target amount and try again
 		while (selectedProofs.length === 0) {
 			currentAmount += 1;
 			selectedProofs = computeTable(currentAmount, currentAmount);
 		}
-		
-		// Fees
+
+		// Adjust for fees if necessary
 		if (includeFees) {
 			let currentFees = currentAmount - amountToSend;
 			let expectedFees = this.getFeesForProofs(selectedProofs);
@@ -569,13 +577,11 @@ class CashuWallet {
 				++i;
 				console.debug(`include fees iteration: ${i}`);
 				currentAmount += 1;
-				// Check that the current target amount does not exceed the provided balance
-				if (currentAmount > sumSeries[n-1]) {
+				if (currentAmount > sumSeries[n - 1]) {
 					throw new Error("Not enough balance to cover this amount");
 				}
 				selectedProofs = computeTable(currentAmount, currentAmount);
-				console.debug(`selectedProofs: ${JSON.stringify(selectedProofs)}`)
-				// Check that there exist a solution for `currentAmount`
+				console.debug(`selectedProofs: ${JSON.stringify(selectedProofs)}`);
 				if (selectedProofs.length === 0) {
 					continue;
 				}
